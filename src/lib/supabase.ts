@@ -16,7 +16,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!)
   : null;
 
-const STORAGE_KEY = 'trip_planner_current_data_v1';
+const STORAGE_KEY = 'trip_planner_vietnam_v2';
 
 // Get local data or initialize with initial mock
 export function getLocalTripData(): TripFullData {
@@ -24,7 +24,10 @@ export function getLocalTripData(): TripFullData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (parsed?.trip?.id === 'trip-vietnam-2026') {
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Error reading localStorage', e);
