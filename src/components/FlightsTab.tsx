@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { Flight } from '../types/trip';
-import { Plane, Plus, Trash2, ArrowLeft, Ticket, ShieldCheck } from 'lucide-react';
+import { Plane, Plus, Trash2, Pencil, Ticket, ShieldCheck } from 'lucide-react';
 
 interface FlightsTabProps {
   flights: Flight[];
   tripId: string;
   onAddFlight: (flight: Omit<Flight, 'id' | 'tripId'>) => void;
+  onUpdateFlight: (id: string, flight: Omit<Flight, 'id' | 'tripId'>) => void;
   onDeleteFlight: (id: string) => void;
   onOpenAiChatWithPrompt: (prompt: string) => void;
 }
@@ -15,10 +16,12 @@ interface FlightsTabProps {
 export function FlightsTab({
   flights,
   onAddFlight,
+  onUpdateFlight,
   onDeleteFlight,
   onOpenAiChatWithPrompt,
 }: FlightsTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form states
   const [airline, setAirline] = useState('');
@@ -36,7 +39,7 @@ export function FlightsTab({
     e.preventDefault();
     if (!airline.trim() || !flightNumber.trim()) return;
 
-    onAddFlight({
+    const data = {
       airline: airline.trim(),
       flightNumber: flightNumber.trim().toUpperCase(),
       departureAirport: departureAirport.trim(),
@@ -47,7 +50,9 @@ export function FlightsTab({
       seat: seat.trim() || undefined,
       price: price ? Number(price) : 0,
       notes: notes.trim() || undefined,
-    });
+    };
+    if (editingId) onUpdateFlight(editingId, data);
+    else onAddFlight(data);
 
     setAirline('');
     setFlightNumber('');
@@ -58,6 +63,28 @@ export function FlightsTab({
     setSeat('');
     setPrice('');
     setNotes('');
+    setEditingId(null);
+    setShowAddForm(false);
+  };
+
+  const startEdit = (f: Flight) => {
+    setEditingId(f.id);
+    setAirline(f.airline);
+    setFlightNumber(f.flightNumber);
+    setDepartureAirport(f.departureAirport);
+    setArrivalAirport(f.arrivalAirport);
+    setDepartureTime(f.departureTime.slice(0, 16));
+    setArrivalTime(f.arrivalTime.slice(0, 16));
+    setConfirmationCode(f.confirmationCode ?? '');
+    setSeat(f.seat ?? '');
+    setPrice(f.price ? String(f.price) : '');
+    setNotes(f.notes ?? '');
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeForm = () => {
+    setEditingId(null);
     setShowAddForm(false);
   };
 
@@ -88,7 +115,7 @@ export function FlightsTab({
         </div>
 
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => (showAddForm ? closeForm() : setShowAddForm(true))}
           className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -104,7 +131,7 @@ export function FlightsTab({
         >
           <h3 className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
             <Plane className="w-4 h-4 text-teal-600" />
-            <span>הוספת פרטי טיסה</span>
+            <span>{editingId ? 'עריכת פרטי טיסה' : 'הוספת פרטי טיסה'}</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -226,7 +253,7 @@ export function FlightsTab({
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setShowAddForm(false)}
+              onClick={closeForm}
               className="px-3.5 py-1.5 text-xs text-stone-600 hover:bg-stone-100 rounded-xl"
             >
               ביטול
@@ -235,7 +262,7 @@ export function FlightsTab({
               type="submit"
               className="px-4 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs"
             >
-              שמור טיסה
+              {editingId ? 'עדכן טיסה' : 'שמור טיסה'}
             </button>
           </div>
         </form>
@@ -276,6 +303,13 @@ export function FlightsTab({
                       <span>PNR: {f.confirmationCode}</span>
                     </span>
                   )}
+                  <button
+                    onClick={() => startEdit(f)}
+                    title="ערוך טיסה"
+                    className="p-1.5 text-white/60 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => onDeleteFlight(f.id)}
                     title="מחק טיסה"

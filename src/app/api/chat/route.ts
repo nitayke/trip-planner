@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
+import { Activity, Flight, Lodging } from '../../../types/trip';
 
 // Define functions/tools for Gemini
 const tripFunctions: FunctionDeclaration[] = [
@@ -42,11 +43,32 @@ const tripFunctions: FunctionDeclaration[] = [
     },
   },
   {
-    name: 'delete_activity',
-    description: 'מחיקת פעילות מהמסלול לפי כותרת או מזהה',
+    name: 'update_activity',
+    description: 'עריכת פעילות קיימת (שינוי תאריך, שעה, שם, מיקום, קטגוריה, עלות או הערות). העדיפו לציין id מהרשימה',
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
+        id: { type: SchemaType.STRING, description: 'מזהה הפעילות מהרשימה (מועדף)' },
+        title: { type: SchemaType.STRING, description: 'שם הפעילות הנוכחי, אם אין id' },
+        currentDate: { type: SchemaType.STRING, description: 'התאריך הנוכחי של הפעילות YYYY-MM-DD, לבחירה בין פעילויות דומות' },
+        newTitle: { type: SchemaType.STRING, description: 'שם חדש' },
+        activityDate: { type: SchemaType.STRING, description: 'תאריך חדש YYYY-MM-DD' },
+        timeSlot: { type: SchemaType.STRING, description: 'שעה חדשה או חלק ביום' },
+        location: { type: SchemaType.STRING, description: 'מיקום חדש' },
+        category: { type: SchemaType.STRING, description: 'קטגוריה: sightseeing, food, transport, relaxation, nature, shopping, attraction, other' },
+        cost: { type: SchemaType.NUMBER, description: 'עלות בשקלים' },
+        description: { type: SchemaType.STRING, description: 'תיאור או הערות' },
+        status: { type: SchemaType.STRING, description: 'planned, completed או cancelled' },
+      },
+    },
+  },
+  {
+    name: 'delete_activity',
+    description: 'מחיקת פעילות מהמסלול לפי מזהה או כותרת',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        id: { type: SchemaType.STRING, description: 'מזהה הפעילות מהרשימה (מועדף)' },
         title: {
           type: SchemaType.STRING,
           description: 'שם הפעילות או חלק ממנה למחיקה',
@@ -56,7 +78,70 @@ const tripFunctions: FunctionDeclaration[] = [
           description: 'תאריך הפעילות (אופציונלי אך מומלץ)',
         },
       },
-      required: ['title'],
+    },
+  },
+  {
+    name: 'update_flight',
+    description: 'עריכת טיסה קיימת (שעות, שדות תעופה, קוד הזמנה, מחיר וכו׳). העדיפו לציין id מהרשימה',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        id: { type: SchemaType.STRING, description: 'מזהה הטיסה מהרשימה (מועדף)' },
+        title: { type: SchemaType.STRING, description: 'מספר טיסה, חברה או שדה כדי לזהות את הטיסה, אם אין id' },
+        airline: { type: SchemaType.STRING, description: 'חברת תעופה חדשה' },
+        newFlightNumber: { type: SchemaType.STRING, description: 'מספר טיסה חדש' },
+        departureAirport: { type: SchemaType.STRING, description: 'שדה המראה חדש' },
+        arrivalAirport: { type: SchemaType.STRING, description: 'שדה נחיתה חדש' },
+        departureTime: { type: SchemaType.STRING, description: 'זמן המראה חדש, למשל 2026-05-10T06:15:00' },
+        arrivalTime: { type: SchemaType.STRING, description: 'זמן נחיתה חדש' },
+        confirmationCode: { type: SchemaType.STRING, description: 'קוד הזמנה' },
+        seat: { type: SchemaType.STRING, description: 'מקומות ישיבה' },
+        price: { type: SchemaType.NUMBER, description: 'מחיר בשקלים' },
+        notes: { type: SchemaType.STRING, description: 'הערות' },
+      },
+    },
+  },
+  {
+    name: 'delete_flight',
+    description: 'מחיקת טיסה',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        id: { type: SchemaType.STRING, description: 'מזהה הטיסה מהרשימה (מועדף)' },
+        title: { type: SchemaType.STRING, description: 'מספר טיסה, חברה או שדה כדי לזהות את הטיסה, אם אין id' },
+      },
+    },
+  },
+  {
+    name: 'update_lodging',
+    description: 'עריכת מלון או מקום לינה קיים (תאריכים, כתובת, מחיר, קוד אישור וכו׳). העדיפו לציין id מהרשימה',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        id: { type: SchemaType.STRING, description: 'מזהה המלון מהרשימה (מועדף)' },
+        name: { type: SchemaType.STRING, description: 'שם המלון הנוכחי, אם אין id' },
+        newName: { type: SchemaType.STRING, description: 'שם חדש' },
+        type: { type: SchemaType.STRING, description: 'סוג: hotel, airbnb, resort, apartment, other' },
+        address: { type: SchemaType.STRING, description: 'כתובת חדשה' },
+        checkInDate: { type: SchemaType.STRING, description: 'צ׳ק אין חדש YYYY-MM-DD' },
+        checkOutDate: { type: SchemaType.STRING, description: 'צ׳ק אאוט חדש YYYY-MM-DD' },
+        confirmationCode: { type: SchemaType.STRING, description: 'מספר אישור הזמנה' },
+        price: { type: SchemaType.NUMBER, description: 'מחיר' },
+        contactPhone: { type: SchemaType.STRING, description: 'טלפון' },
+        bookingUrl: { type: SchemaType.STRING, description: 'קישור להזמנה' },
+        notes: { type: SchemaType.STRING, description: 'הערות' },
+      },
+    },
+  },
+  {
+    name: 'delete_lodging',
+    description: 'מחיקת מלון או מקום לינה',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        id: { type: SchemaType.STRING, description: 'מזהה המלון מהרשימה (מועדף)' },
+        name: { type: SchemaType.STRING, description: 'שם המלון, אם אין id' },
+      },
     },
   },
   {
@@ -153,6 +238,11 @@ const tripFunctions: FunctionDeclaration[] = [
   },
 ];
 
+// One line per item, so the model can quote ids back in update/delete calls
+function list<T>(items: T[] | undefined, line: (item: T) => string): string {
+  return items && items.length > 0 ? items.map(line).join('\n') : '(אין)';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { messages, currentTripData } = await req.json();
@@ -180,13 +270,19 @@ export async function POST(req: NextRequest) {
 הנתונים הנוכחיים של הטיול שלהם הם:
 יעד וכותרת: ${currentTripData?.trip?.title} (${currentTripData?.trip?.destination})
 תאריכים: ${currentTripData?.trip?.startDate} עד ${currentTripData?.trip?.endDate}
-מספר פעילויות קיימות: ${currentTripData?.activities?.length || 0}
-מספר טיסות: ${currentTripData?.flights?.length || 0}
-מקומות לינה: ${currentTripData?.lodgings?.length || 0}
 רשימת אריזה: ${currentTripData?.packingItems?.length || 0} פריטים
 
+הפעילויות הקיימות (מזהה | תאריך | שעה | שם | מיקום):
+${list(currentTripData?.activities, (a: Activity) => `${a.id} | ${a.activityDate} | ${a.timeSlot ?? ''} | ${a.title} | ${a.location ?? ''}`)}
+
+הטיסות הקיימות (מזהה | מספר | חברה | מסלול | המראה):
+${list(currentTripData?.flights, (f: Flight) => `${f.id} | ${f.flightNumber} | ${f.airline} | ${f.departureAirport} -> ${f.arrivalAirport} | ${f.departureTime}`)}
+
+מקומות הלינה הקיימים (מזהה | שם | צ׳ק אין | צ׳ק אאוט):
+${list(currentTripData?.lodgings, (l: Lodging) => `${l.id} | ${l.name} | ${l.checkInDate} | ${l.checkOutDate}`)}
+
 הנחיות חשובות:
-1. כאשר המשתמש מבקש להוסיף, לעדכן או למחוק משהו (פעילות, טיסה, מלון, פריט לאריזה, הוצאה בתקציב) - **הפעל תמיד את הפונקציה המתאימה**.
+1. כאשר המשתמש מבקש להוסיף, לעדכן או למחוק משהו (פעילות, טיסה, מלון, פריט לאריזה, הוצאה בתקציב) - **הפעל תמיד את הפונקציה המתאימה**. לעריכה ומחיקה של פעילות, טיסה או מלון קיימים השתמש ב-id מהרשימות למעלה.
 2. אם המשתמש לא מציין תאריך מדויק לפעילות, הסק אותו באופן הגיוני מתוך תאריכי הטיול (בין ${currentTripData?.trip?.startDate} ל-${currentTripData?.trip?.endDate}) או שאל בנימוס.
 3. דבר תמיד בעברית טבעית, נעימה, קולחת ומסבירת פנים.
 4. בסיום הפעולה, הסבר בקצרה ובחיוביות מה עודכן במערכת.

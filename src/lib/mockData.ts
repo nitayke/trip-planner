@@ -3,7 +3,6 @@ import { tripFlights } from './tripFlights';
 import { tripTasks } from './tripTasks';
 import { tripLodgings } from './tripLodgings';
 import { tripBudget } from './tripBudget';
-import { tripActivities } from './tripActivities';
 
 export const initialTripData: TripFullData = {
   trip: {
@@ -18,7 +17,7 @@ export const initialTripData: TripFullData = {
   },
   flights: tripFlights,
   lodgings: tripLodgings,
-  activities: tripActivities,
+  activities: [],
   budgetItems: tripBudget,
   packingItems: [],
   tasks: tripTasks,

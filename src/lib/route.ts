@@ -21,7 +21,8 @@ export interface RouteStop {
 
 export const routeStops: RouteStop[] = [
   { id: 'sapa', name: 'סאפה', country: 'vn', start: '2026-11-18', end: '2026-11-21', emoji: '🌾', lat: 22.3364, lng: 103.8438, arriveBy: 'land' },
-  { id: 'hagiang', name: 'הא ג׳יאנג לופ', country: 'vn', start: '2026-11-22', end: '2026-11-24', emoji: '🏍️', lat: 23.12, lng: 105.15, arriveBy: 'land' },
+  { id: 'hagiang', name: 'הא ג׳יאנג לופ', country: 'vn', start: '2026-11-22', end: '2026-11-24', lastNight: '2026-11-23', emoji: '🏍️', lat: 23.12, lng: 105.15, arriveBy: 'land' },
+  { id: 'hanoi-transit', name: 'האנוי (לילה בדרך)', country: 'vn', start: '2026-11-24', end: '2026-11-24', emoji: '🚌', lat: 21.0285, lng: 105.8542, arriveBy: 'land' },
   { id: 'maichau', name: 'מאי צ׳או', country: 'vn', start: '2026-11-25', end: '2026-11-26', emoji: '🚲', lat: 20.661, lng: 105.069, arriveBy: 'land' },
   { id: 'hanoi', name: 'האנוי', country: 'vn', start: '2026-11-27', end: '2026-11-28', emoji: '🏮', lat: 21.0285, lng: 105.8542, arriveBy: 'land' },
   { id: 'caobang', name: 'קאו בנג לופ', country: 'vn', start: '2026-11-29', end: '2026-11-30', emoji: '💧', lat: 22.85, lng: 106.72, arriveBy: 'land' },

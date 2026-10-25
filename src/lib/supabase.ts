@@ -3,7 +3,6 @@ import { TripFullData, Trip, Flight, Lodging, Activity, BudgetItem, PackingItem,
 import { initialTripData } from './mockData';
 import { tripLodgings, placeholderLodgingIds } from './tripLodgings';
 import { tripBudget, placeholderBudgetIds } from './tripBudget';
-import { tripActivities, placeholderActivityIds, placeholderPackingIds, placeholderChatIds } from './tripActivities';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -72,45 +71,12 @@ export function saveLocalTripData(data: TripFullData) {
 
 const SEED_MIGRATION_KEY = 'trip_seed_migration_v5';
 const BUDGET_MIGRATION_KEY = 'trip_seed_migration_v6';
-const ACTIVITY_MIGRATION_KEY = 'trip_seed_migration_v7';
 
 // One-time update for data that was saved before the real hotel bookings and the
 // cancellation reminders existed: drops the old placeholder hotels, adds what is missing
 // (by id) and pushes it to Supabase.
 function applySeedMigration(data: TripFullData): TripFullData {
-  return applyActivityMigration(applyBudgetMigration(applyLodgingMigration(data)));
-}
-
-// Drops the sample activities, packing list and welcome message, and adds the plans from the Keep note (by id)
-function applyActivityMigration(data: TripFullData): TripFullData {
-  if (typeof window === 'undefined') return data;
-  try {
-    if (localStorage.getItem(ACTIVITY_MIGRATION_KEY)) return data;
-
-    const placeholderActs = new Set(placeholderActivityIds);
-    const removedActs = data.activities.filter((a) => placeholderActs.has(a.id));
-    const keptActs = data.activities.filter((a) => !placeholderActs.has(a.id));
-    const keptIds = new Set(keptActs.map((a) => a.id));
-    const addedActs = tripActivities.filter((a) => !keptIds.has(a.id));
-
-    const placeholderPack = new Set(placeholderPackingIds);
-    const removedPacking = data.packingItems.filter((p) => placeholderPack.has(p.id));
-
-    removedActs.forEach((a) => syncTripItem('activity', 'delete', { id: a.id }));
-    removedPacking.forEach((p) => syncTripItem('packing', 'delete', { id: p.id }));
-    addedActs.forEach((a) => syncTripItem('activity', 'insert', a));
-
-    localStorage.setItem(ACTIVITY_MIGRATION_KEY, new Date().toISOString());
-    return {
-      ...data,
-      activities: [...keptActs, ...addedActs],
-      packingItems: data.packingItems.filter((p) => !placeholderPack.has(p.id)),
-      chatMessages: data.chatMessages.filter((m) => !placeholderChatIds.includes(m.id)),
-    };
-  } catch (e) {
-    console.error('Activity migration failed', e);
-    return data;
-  }
+  return applyBudgetMigration(applyLodgingMigration(data));
 }
 
 // Replaces the sample budget with the real flights and hotels (by id, so it never duplicates)

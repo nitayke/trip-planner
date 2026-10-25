@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { Lodging } from '../types/trip';
-import { Hotel, Plus, Trash2, MapPin, Calendar, Phone, ExternalLink, Hash, BedDouble } from 'lucide-react';
+import { Hotel, Plus, Trash2, Pencil, MapPin, Calendar, Phone, ExternalLink, Hash, BedDouble } from 'lucide-react';
 import { routeStops, lodgingForStop, formatDM } from '../lib/route';
 
 interface LodgingsTabProps {
   lodgings: Lodging[];
   onAddLodging: (lodging: Omit<Lodging, 'id' | 'tripId'>) => void;
+  onUpdateLodging: (id: string, lodging: Omit<Lodging, 'id' | 'tripId'>) => void;
   onDeleteLodging: (id: string) => void;
   onOpenAiChatWithPrompt: (prompt: string) => void;
 }
@@ -15,10 +16,12 @@ interface LodgingsTabProps {
 export function LodgingsTab({
   lodgings,
   onAddLodging,
+  onUpdateLodging,
   onDeleteLodging,
   onOpenAiChatWithPrompt,
 }: LodgingsTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const stopsWithoutHotel = routeStops
     .map((stop) => ({ stop, ...lodgingForStop(stop, lodgings) }))
@@ -40,7 +43,7 @@ export function LodgingsTab({
     e.preventDefault();
     if (!name.trim() || !address.trim() || !checkInDate || !checkOutDate) return;
 
-    onAddLodging({
+    const data = {
       name: name.trim(),
       type,
       address: address.trim(),
@@ -51,7 +54,9 @@ export function LodgingsTab({
       contactPhone: contactPhone.trim() || undefined,
       notes: notes.trim() || undefined,
       bookingUrl: bookingUrl.trim() || undefined,
-    });
+    };
+    if (editingId) onUpdateLodging(editingId, data);
+    else onAddLodging(data);
 
     setName('');
     setAddress('');
@@ -62,6 +67,28 @@ export function LodgingsTab({
     setContactPhone('');
     setNotes('');
     setBookingUrl('');
+    setEditingId(null);
+    setShowAddForm(false);
+  };
+
+  const startEdit = (l: Lodging) => {
+    setEditingId(l.id);
+    setName(l.name);
+    setType(l.type);
+    setAddress(l.address);
+    setCheckInDate(l.checkInDate);
+    setCheckOutDate(l.checkOutDate);
+    setConfirmationCode(l.confirmationCode ?? '');
+    setPrice(l.price ? String(l.price) : '');
+    setContactPhone(l.contactPhone ?? '');
+    setNotes(l.notes ?? '');
+    setBookingUrl(l.bookingUrl ?? '');
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeForm = () => {
+    setEditingId(null);
     setShowAddForm(false);
   };
 
@@ -101,7 +128,7 @@ export function LodgingsTab({
         </div>
 
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => (showAddForm ? closeForm() : setShowAddForm(true))}
           className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -145,7 +172,7 @@ export function LodgingsTab({
         >
           <h3 className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
             <Hotel className="w-4 h-4 text-teal-600" />
-            <span>הוספת מקום לינה</span>
+            <span>{editingId ? 'עריכת מקום לינה' : 'הוספת מקום לינה'}</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -269,7 +296,7 @@ export function LodgingsTab({
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setShowAddForm(false)}
+              onClick={closeForm}
               className="px-3.5 py-1.5 text-xs text-stone-600 hover:bg-stone-100 rounded-xl"
             >
               ביטול
@@ -278,7 +305,7 @@ export function LodgingsTab({
               type="submit"
               className="px-4 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs"
             >
-              שמור מלון
+              {editingId ? 'עדכן מלון' : 'שמור מלון'}
             </button>
           </div>
         </form>
@@ -315,13 +342,22 @@ export function LodgingsTab({
                         <h3 className="font-display text-xl text-stone-900 mt-2">{l.name}</h3>
                       </div>
 
-                      <button
-                        onClick={() => onDeleteLodging(l.id)}
-                        title="מחק מקום לינה"
-                        className="p-1.5 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEdit(l)}
+                          title="ערוך מקום לינה"
+                          className="p-1.5 text-stone-300 hover:text-teal-700 hover:bg-teal-50 rounded-xl transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteLodging(l.id)}
+                          title="מחק מקום לינה"
+                          className="p-1.5 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Address & Navigation */}

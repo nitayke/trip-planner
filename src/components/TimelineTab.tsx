@@ -15,6 +15,7 @@ import {
   ShoppingBag, 
   CheckCircle2, 
   Trash2,
+  Pencil,
   Calendar,
   Sparkles
 } from 'lucide-react';
@@ -23,6 +24,7 @@ interface TimelineTabProps {
   trip: Trip;
   activities: Activity[];
   onAddActivity: (act: Omit<Activity, 'id' | 'tripId'>) => void;
+  onUpdateActivity: (id: string, changes: Partial<Omit<Activity, 'id' | 'tripId'>>) => void;
   onDeleteActivity: (id: string) => void;
   onToggleStatus: (id: string) => void;
   onOpenAiChatWithPrompt: (prompt: string) => void;
@@ -32,6 +34,7 @@ export function TimelineTab({
   trip,
   activities,
   onAddActivity,
+  onUpdateActivity,
   onDeleteActivity,
   onToggleStatus,
   onOpenAiChatWithPrompt,
@@ -56,6 +59,8 @@ export function TimelineTab({
 
   const [selectedDate, setSelectedDate] = useState<string>(daysList[0] || trip.startDate);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formDate, setFormDate] = useState(daysList[0] || trip.startDate);
 
   // Form state
   const [newTitle, setNewTitle] = useState('');
@@ -76,22 +81,56 @@ export function TimelineTab({
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    onAddActivity({
-      activityDate: selectedDate,
+    const fields = {
+      activityDate: formDate,
       title: newTitle.trim(),
       timeSlot: newTime.trim() || undefined,
       location: newLocation.trim() || undefined,
       category: newCategory,
       cost: newCost ? Number(newCost) : 0,
       description: newDescription.trim() || undefined,
-      status: 'planned',
-      orderIndex: currentDayActivities.length + 1,
-    });
+    };
+    if (editingId) {
+      onUpdateActivity(editingId, fields);
+      setSelectedDate(formDate);
+    } else {
+      onAddActivity({ ...fields, status: 'planned', orderIndex: currentDayActivities.length + 1 });
+    }
 
     setNewTitle('');
     setNewLocation('');
     setNewDescription('');
     setNewCost('');
+    setEditingId(null);
+    setShowAddForm(false);
+  };
+
+  const startAdd = () => {
+    setEditingId(null);
+    setFormDate(selectedDate);
+    setNewTitle('');
+    setNewTime('10:00');
+    setNewLocation('');
+    setNewCategory('sightseeing');
+    setNewCost('');
+    setNewDescription('');
+    setShowAddForm(true);
+  };
+
+  const startEdit = (a: Activity) => {
+    setEditingId(a.id);
+    setFormDate(a.activityDate);
+    setNewTitle(a.title);
+    setNewTime(a.timeSlot ?? '');
+    setNewLocation(a.location ?? '');
+    setNewCategory(a.category);
+    setNewCost(a.cost ? String(a.cost) : '');
+    setNewDescription(a.description ?? '');
+    setShowAddForm(true);
+  };
+
+  const closeForm = () => {
+    setEditingId(null);
     setShowAddForm(false);
   };
 
@@ -252,7 +291,7 @@ export function TimelineTab({
                 <span>רעיונות מה-AI</span>
               </button>
               <button
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={() => (showAddForm ? closeForm() : startAdd())}
                 className="flex items-center gap-1.5 rounded-xl bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-teal-900/15 transition hover:bg-teal-800"
               >
                 <Plus className="h-4 w-4" />
@@ -270,10 +309,21 @@ export function TimelineTab({
         >
           <h3 className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
             <Plus className="w-4 h-4 text-teal-600" />
-            <span>הוספת פעילות חדשה ליום {formatHebrewDate(selectedDate)}</span>
+            <span>{editingId ? 'עריכת פעילות' : `הוספת פעילות חדשה ליום ${formatHebrewDate(formDate)}`}</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">תאריך</label>
+              <input
+                type="date"
+                required
+                value={formDate}
+                onChange={(e) => setFormDate(e.target.value)}
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">שם הפעילות או המקום *</label>
               <input
@@ -351,7 +401,7 @@ export function TimelineTab({
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setShowAddForm(false)}
+              onClick={closeForm}
               className="px-3.5 py-1.5 text-xs text-stone-600 hover:bg-stone-100 rounded-xl"
             >
               ביטול
@@ -360,7 +410,7 @@ export function TimelineTab({
               type="submit"
               className="px-4 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs"
             >
-              שמור פעילות
+              {editingId ? 'עדכן פעילות' : 'שמור פעילות'}
             </button>
           </div>
         </form>
@@ -473,6 +523,14 @@ export function TimelineTab({
                         }`}
                       >
                         <CheckCircle2 className={`w-5 h-5 ${isDone ? 'fill-emerald-100' : ''}`} />
+                      </button>
+
+                      <button
+                        onClick={() => startEdit(act)}
+                        title="ערוך פעילות"
+                        className="p-2 text-stone-300 hover:text-teal-700 hover:bg-teal-50 rounded-xl transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
                       </button>
 
                       <button

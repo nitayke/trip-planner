@@ -24,6 +24,45 @@ const MapTab = dynamic(() => import('../components/MapTab').then((m) => m.MapTab
   loading: () => <div className="h-[62vh] animate-pulse rounded-2xl bg-stone-100" />,
 });
 
+const flightLabel = (f: Flight) => `${f.flightNumber} ${f.airline} ${f.departureAirport} ${f.arrivalAirport}`;
+
+// Finds the item an AI action refers to: by exact id when given, else by a title/name substring
+// (narrowed by date when one is given)
+function findItem<T extends { id: string }>(
+  items: T[],
+  args: Record<string, any>,
+  label: (item: T) => string,
+  date?: (item: T) => string,
+  dateArg?: string,
+): T | undefined {
+  if (args.id) {
+    const byId = items.find((i) => i.id === args.id);
+    if (byId) return byId;
+  }
+  const query = String(args.title ?? args.name ?? args.query ?? '').toLowerCase();
+  if (!query) return undefined;
+  const matches = items.filter((i) => label(i).toLowerCase().includes(query));
+  if (date && dateArg && args[dateArg]) {
+    return matches.find((i) => date(i) === args[dateArg]) ?? matches[0];
+  }
+  return matches[0];
+}
+
+// Copies the listed fields the AI actually sent, plus an optional renamed field and numeric extras
+function pick(
+  source: Record<string, any>,
+  keys: string[],
+  renamed?: string,
+  renamedKey?: string,
+  numeric: Record<string, any> = {},
+): any {
+  const out: Record<string, any> = {};
+  for (const k of keys) if (source[k] !== undefined && source[k] !== null) out[k] = source[k];
+  if (renamed && renamedKey) out[renamedKey] = renamed;
+  for (const [k, v] of Object.entries(numeric)) if (v !== undefined && v !== null) out[k] = Number(v);
+  return out;
+}
+
 export default function HomePage() {
   const [tripData, setTripData] = useState<TripFullData>(initialTripData);
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
@@ -78,6 +117,15 @@ export default function HomePage() {
     syncTripItem('activity', 'delete', { id });
   };
 
+  const handleUpdateActivity = (id: string, changes: Partial<Omit<Activity, 'id' | 'tripId'>>) => {
+    updateData((prev) => {
+      const updated = prev.activities.map((a) => (a.id === id ? { ...a, ...changes } : a));
+      const act = updated.find((a) => a.id === id);
+      if (act) syncTripItem('activity', 'update', act);
+      return { ...prev, activities: updated };
+    });
+  };
+
   const handleToggleActivityStatus = (id: string) => {
     updateData((prev) => {
       const updated = prev.activities.map((a) =>
@@ -103,6 +151,15 @@ export default function HomePage() {
     syncTripItem('flight', 'insert', newFlight);
   };
 
+  const handleUpdateFlight = (id: string, changes: Partial<Omit<Flight, 'id' | 'tripId'>>) => {
+    updateData((prev) => {
+      const updated = prev.flights.map((f) => (f.id === id ? { ...f, ...changes } : f));
+      const flight = updated.find((f) => f.id === id);
+      if (flight) syncTripItem('flight', 'update', flight);
+      return { ...prev, flights: updated };
+    });
+  };
+
   const handleDeleteFlight = (id: string) => {
     updateData((prev) => ({
       ...prev,
@@ -123,6 +180,15 @@ export default function HomePage() {
       lodgings: [...prev.lodgings, newLodging],
     }));
     syncTripItem('lodging', 'insert', newLodging);
+  };
+
+  const handleUpdateLodging = (id: string, changes: Partial<Omit<Lodging, 'id' | 'tripId'>>) => {
+    updateData((prev) => {
+      const updated = prev.lodgings.map((l) => (l.id === id ? { ...l, ...changes } : l));
+      const lodging = updated.find((l) => l.id === id);
+      if (lodging) syncTripItem('lodging', 'update', lodging);
+      return { ...prev, lodgings: updated };
+    });
   };
 
   const handleDeleteLodging = (id: string) => {
@@ -251,13 +317,54 @@ export default function HomePage() {
         break;
       }
 
-      case 'delete_activity': {
-        const match = tripData.activities.find((a) =>
-          a.title.toLowerCase().includes(args.title.toLowerCase())
-        );
+      case 'update_activity': {
+        const match = findItem(tripData.activities, args, (a) => a.title, (a) => a.activityDate, 'currentDate');
         if (match) {
-          handleDeleteActivity(match.id);
+          handleUpdateActivity(
+            match.id,
+            pick(args, ['activityDate', 'timeSlot', 'location', 'category', 'description', 'status'], args.newTitle, 'title', { cost: args.cost })
+          );
         }
+        break;
+      }
+
+      case 'delete_activity': {
+        const match = findItem(tripData.activities, args, (a) => a.title, (a) => a.activityDate, 'activityDate');
+        if (match) handleDeleteActivity(match.id);
+        break;
+      }
+
+      case 'update_flight': {
+        const match = findItem(tripData.flights, args, flightLabel);
+        if (match) {
+          handleUpdateFlight(
+            match.id,
+            pick(args, ['airline', 'departureAirport', 'arrivalAirport', 'departureTime', 'arrivalTime', 'confirmationCode', 'seat', 'notes'], args.newFlightNumber, 'flightNumber', { price: args.price })
+          );
+        }
+        break;
+      }
+
+      case 'delete_flight': {
+        const match = findItem(tripData.flights, args, flightLabel);
+        if (match) handleDeleteFlight(match.id);
+        break;
+      }
+
+      case 'update_lodging': {
+        const match = findItem(tripData.lodgings, args, (l) => l.name);
+        if (match) {
+          handleUpdateLodging(
+            match.id,
+            pick(args, ['type', 'address', 'checkInDate', 'checkOutDate', 'confirmationCode', 'notes', 'contactPhone', 'bookingUrl'], args.newName, 'name', { price: args.price })
+          );
+        }
+        break;
+      }
+
+      case 'delete_lodging': {
+        const match = findItem(tripData.lodgings, args, (l) => l.name);
+        if (match) handleDeleteLodging(match.id);
         break;
       }
 
@@ -392,6 +499,7 @@ export default function HomePage() {
             trip={tripData.trip}
             activities={tripData.activities}
             onAddActivity={handleAddActivity}
+            onUpdateActivity={handleUpdateActivity}
             onDeleteActivity={handleDeleteActivity}
             onToggleStatus={handleToggleActivityStatus}
             onOpenAiChatWithPrompt={handleOpenAiWithPrompt}
@@ -403,6 +511,7 @@ export default function HomePage() {
             flights={tripData.flights}
             tripId={tripData.trip.id}
             onAddFlight={handleAddFlight}
+            onUpdateFlight={handleUpdateFlight}
             onDeleteFlight={handleDeleteFlight}
             onOpenAiChatWithPrompt={handleOpenAiWithPrompt}
           />
@@ -412,6 +521,7 @@ export default function HomePage() {
           <LodgingsTab
             lodgings={tripData.lodgings}
             onAddLodging={handleAddLodging}
+            onUpdateLodging={handleUpdateLodging}
             onDeleteLodging={handleDeleteLodging}
             onOpenAiChatWithPrompt={handleOpenAiWithPrompt}
           />
