@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Trip } from '../types/trip';
+import { Trip, Lodging } from '../types/trip';
 import { Calendar, Cloud, CloudOff, Sparkles } from 'lucide-react';
-import { routeStops, countryStyle, stopForDate } from '../lib/route';
+import { routeStops, countryStyle, stopForDate, lodgingForStop } from '../lib/route';
 
 interface HeaderProps {
   trip: Trip;
+  lodgings: Lodging[];
   isCloudConnected: boolean;
   onOpenCloudModal: () => void;
   onOpenAiChat: () => void;
@@ -19,7 +20,7 @@ function formatShort(date: string) {
   return `${Number(d)}.${Number(m)}`;
 }
 
-export function Header({ trip, isCloudConnected, onOpenCloudModal, onOpenAiChat }: HeaderProps) {
+export function Header({ trip, lodgings, isCloudConnected, onOpenCloudModal, onOpenAiChat }: HeaderProps) {
   // Computed on the client only (Next.js disallows `new Date()` during prerender).
   const [today, setToday] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -113,18 +114,40 @@ export function Header({ trip, isCloudConnected, onOpenCloudModal, onOpenAiChat 
             {routeStops.map((stop, i) => {
               const isCurrent = currentStop?.id === stop.id;
               const isPast = today ? stop.end < today : false;
+              const lodging = lodgingForStop(stop, lodgings);
+              const noHotel = lodging.status === 'none';
+              const partialHotel = lodging.status === 'partial';
               return (
                 <li key={stop.id} className="flex items-center gap-1.5">
                   <div
+                    title={
+                      noHotel
+                        ? 'עדיין לא סגרתם מלון ביעד הזה'
+                        : partialHotel
+                          ? `חסר מלון ללילות: ${lodging.missingNights.map(formatShort).join(', ')}`
+                          : undefined
+                    }
                     className={`glass flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs transition ${
                       isCurrent ? 'ring-2 ring-amber-300 bg-white/30' : ''
-                    } ${isPast ? 'opacity-60' : ''} ${stop.tentative ? 'border-dashed' : ''}`}
+                    } ${isPast ? 'opacity-60' : ''} ${stop.tentative ? 'border-dashed' : ''} ${
+                      noHotel ? 'ring-2 ring-rose-400 bg-rose-500/30' : partialHotel ? 'ring-2 ring-amber-300/80' : ''
+                    }`}
                   >
                     <span>{stop.emoji}</span>
                     <span className="font-semibold">{stop.name}</span>
                     <span className="text-white/70">
                       {formatShort(stop.start)}–{formatShort(stop.end)}
                     </span>
+                    {noHotel && (
+                      <span className="rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        🛏️ אין מלון
+                      </span>
+                    )}
+                    {partialHotel && (
+                      <span className="rounded-md bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-stone-900">
+                        🛏️ חסרים לילות
+                      </span>
+                    )}
                     {i === 0 || routeStops[i - 1].country !== stop.country ? (
                       <span title={countryStyle[stop.country].label}>{countryStyle[stop.country].flag}</span>
                     ) : null}

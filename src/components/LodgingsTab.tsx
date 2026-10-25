@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Lodging } from '../types/trip';
-import { Hotel, Plus, Trash2, MapPin, Calendar, Phone, ExternalLink, Hash } from 'lucide-react';
+import { Hotel, Plus, Trash2, MapPin, Calendar, Phone, ExternalLink, Hash, BedDouble } from 'lucide-react';
+import { routeStops, lodgingForStop, formatDM } from '../lib/route';
 
 interface LodgingsTabProps {
   lodgings: Lodging[];
@@ -18,6 +19,10 @@ export function LodgingsTab({
   onOpenAiChatWithPrompt,
 }: LodgingsTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
+
+  const stopsWithoutHotel = routeStops
+    .map((stop) => ({ stop, ...lodgingForStop(stop, lodgings) }))
+    .filter((x) => x.status !== 'booked');
 
   // Form states
   const [name, setName] = useState('');
@@ -103,6 +108,34 @@ export function LodgingsTab({
           <span>{showAddForm ? 'ביטול' : 'הוספת מלון'}</span>
         </button>
       </div>
+
+      {/* Destinations that still need a hotel */}
+      {stopsWithoutHotel.length > 0 && (
+        <div className="rounded-2xl border-2 border-dashed border-rose-300 bg-rose-50/70 p-4">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-rose-800">
+            <BedDouble className="h-4 w-4" />
+            <span>יעדים בלי מלון סגור ({stopsWithoutHotel.length})</span>
+          </h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {stopsWithoutHotel.map(({ stop, status, missingNights }) => (
+              <span
+                key={stop.id}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold ${
+                  status === 'none' ? 'bg-rose-600 text-white' : 'bg-amber-200 text-amber-950'
+                }`}
+              >
+                <span>{stop.emoji}</span>
+                <span>{stop.name}</span>
+                <span className="font-normal opacity-90">
+                  {status === 'none'
+                    ? `${formatDM(stop.start)}–${formatDM(stop.lastNight ?? stop.end)}`
+                    : `חסרים: ${missingNights.map(formatDM).join(', ')}`}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add Form */}
       {showAddForm && (
@@ -361,7 +394,7 @@ export function LodgingsTab({
                       rel="noopener noreferrer"
                       className="text-xs font-bold text-teal-700 hover:text-teal-900 flex items-center gap-1 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs"
                     >
-                      <span>לפרטי ההזמנה</span>
+                      <span>פתיחה ב-Booking</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { TripFullData, Trip, Flight, Lodging, Activity, BudgetItem, PackingItem, ChatMessage } from '../types/trip';
+import { TripFullData, Trip, Flight, Lodging, Activity, BudgetItem, PackingItem, TripTask, ChatMessage } from '../types/trip';
 import { initialTripData } from './mockData';
+import { tripLodgings, placeholderLodgingIds } from './tripLodgings';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -16,7 +17,8 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!)
   : null;
 
-const STORAGE_KEY = 'trip_planner_vietnam_philippines_v3';
+const STORAGE_KEY = 'trip_planner_vietnam_philippines_v4';
+const LEGACY_STORAGE_KEY = 'trip_planner_vietnam_philippines_v3';
 
 // Get local data or initialize with initial mock
 export function getLocalTripData(): TripFullData {
@@ -26,7 +28,28 @@ export function getLocalTripData(): TripFullData {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed?.trip?.id === 'trip-vietnam-philippines-2026') {
-        return parsed;
+        // tasks saved before phase/urgent existed pick those fields up from the seed
+        const seedTasks = new Map(initialTripData.tasks.map((t) => [t.id, t]));
+        const tasks = ((parsed.tasks ?? []) as TripTask[]).map((t) => {
+          const seed = seedTasks.get(t.id);
+          return seed && t.phase === undefined ? { ...t, phase: seed.phase, urgent: seed.urgent } : t;
+        });
+        return { ...parsed, tasks };
+      }
+    }
+
+    // v3 had placeholder flights and no tasks: keep everything else the user edited
+    const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyRaw) {
+      const legacy = JSON.parse(legacyRaw);
+      if (legacy?.trip?.id === 'trip-vietnam-philippines-2026') {
+        const migrated: TripFullData = {
+          ...legacy,
+          flights: initialTripData.flights,
+          tasks: initialTripData.tasks,
+        };
+        saveLocalTripData(migrated);
+        return migrated;
       }
     }
   } catch (e) {
@@ -45,10 +68,79 @@ export function saveLocalTripData(data: TripFullData) {
   }
 }
 
+const SEED_MIGRATION_KEY = 'trip_seed_migration_v5';
+
+// One-time update for data that was saved before the real hotel bookings and the
+// cancellation reminders existed: drops the old placeholder hotels, adds what is missing
+// (by id) and pushes it to Supabase.
+function applySeedMigration(data: TripFullData): TripFullData {
+  if (typeof window === 'undefined') return data;
+  try {
+    if (localStorage.getItem(SEED_MIGRATION_KEY)) return data;
+
+    const placeholders = new Set(placeholderLodgingIds);
+    const removed = data.lodgings.filter((l) => placeholders.has(l.id));
+    const keptLodgings = data.lodgings.filter((l) => !placeholders.has(l.id));
+    const lodgingIds = new Set(keptLodgings.map((l) => l.id));
+    const addedLodgings = tripLodgings.filter((l) => !lodgingIds.has(l.id));
+
+    const taskIds = new Set(data.tasks.map((t) => t.id));
+    const addedTasks = initialTripData.tasks.filter((t) => t.id.startsWith('task-cancel-') && !taskIds.has(t.id));
+
+    removed.forEach((l) => syncTripItem('lodging', 'delete', { id: l.id }));
+    addedLodgings.forEach((l) => syncTripItem('lodging', 'insert', l));
+    addedTasks.forEach((t) => syncTripItem('task', 'insert', t));
+
+    localStorage.setItem(SEED_MIGRATION_KEY, new Date().toISOString());
+    return {
+      ...data,
+      lodgings: [...keptLodgings, ...addedLodgings],
+      tasks: [...data.tasks, ...addedTasks],
+    };
+  } catch (e) {
+    console.error('Seed migration failed', e);
+    return data;
+  }
+}
+
+// supabase-js reports failures in the result instead of throwing
+function reportSyncError(res: { error: { message: string } | null }) {
+  if (res.error) console.error('Error syncing item with Supabase:', res.error.message);
+}
+
+// Some built-in items still carry an old trip id, which the foreign key would reject
+function withTripId(data: TripFullData): TripFullData {
+  const tripId = data.trip.id;
+  const own = <T extends { tripId: string }>(items: T[]) => items.map((i) => ({ ...i, tripId }));
+  return {
+    ...data,
+    flights: own(data.flights),
+    lodgings: own(data.lodgings),
+    activities: own(data.activities),
+    budgetItems: own(data.budgetItems),
+    packingItems: own(data.packingItems),
+    tasks: own(data.tasks),
+  };
+}
+
+async function uploadAllToCloud(data: TripFullData) {
+  const jobs: Promise<void>[] = [
+    ...data.flights.map((i) => syncTripItem('flight', 'insert', i)),
+    ...data.lodgings.map((i) => syncTripItem('lodging', 'insert', i)),
+    ...data.activities.map((i) => syncTripItem('activity', 'insert', i)),
+    ...data.budgetItems.map((i) => syncTripItem('budget', 'insert', i)),
+    ...data.packingItems.map((i) => syncTripItem('packing', 'insert', i)),
+    ...data.tasks.map((i) => syncTripItem('task', 'insert', i)),
+  ];
+  await Promise.all(jobs);
+}
+
 // Data synchronization service
 export async function loadTripData(): Promise<TripFullData> {
   if (!isSupabaseConfigured || !supabase) {
-    return getLocalTripData();
+    const local = applySeedMigration(getLocalTripData());
+    saveLocalTripData(local);
+    return local;
   }
 
   try {
@@ -66,12 +158,13 @@ export async function loadTripData(): Promise<TripFullData> {
     const currentTrip = trips[0];
     const tripId = currentTrip.id;
 
-    const [flightsRes, lodgingsRes, activitiesRes, budgetRes, packingRes, chatRes] = await Promise.all([
+    const [flightsRes, lodgingsRes, activitiesRes, budgetRes, packingRes, tasksRes, chatRes] = await Promise.all([
       supabase.from('flights').select('*').eq('trip_id', tripId).order('departure_time', { ascending: true }),
       supabase.from('lodgings').select('*').eq('trip_id', tripId).order('check_in_date', { ascending: true }),
       supabase.from('activities').select('*').eq('trip_id', tripId).order('activity_date', { ascending: true }).order('order_index', { ascending: true }),
       supabase.from('budget_items').select('*').eq('trip_id', tripId).order('created_at', { ascending: true }),
       supabase.from('packing_items').select('*').eq('trip_id', tripId).order('created_at', { ascending: true }),
+      supabase.from('tasks').select('*').eq('trip_id', tripId).order('created_at', { ascending: true }),
       supabase.from('chat_messages').select('*').eq('trip_id', tripId).order('created_at', { ascending: true }),
     ]);
 
@@ -128,6 +221,8 @@ export async function loadTripData(): Promise<TripFullData> {
       cost: Number(a.cost || 0),
       status: a.status,
       orderIndex: a.order_index,
+      lat: a.lat ?? undefined,
+      lng: a.lng ?? undefined,
     }));
 
     const mappedBudget: BudgetItem[] = (budgetRes.data || []).map((b) => ({
@@ -151,6 +246,20 @@ export async function loadTripData(): Promise<TripFullData> {
       isPacked: Boolean(p.is_packed),
     }));
 
+    const mappedTasks: TripTask[] = (tasksRes.data || []).map((t) => ({
+      id: t.id,
+      tripId: t.trip_id,
+      title: t.title,
+      group: t.task_group,
+      assignedTo: t.assigned_to,
+      dueDate: t.due_date ?? undefined,
+      notes: t.notes ?? undefined,
+      isDone: Boolean(t.is_done),
+      dependsOn: Array.isArray(t.depends_on) ? t.depends_on : [],
+      phase: t.phase ?? 'before',
+      urgent: Boolean(t.urgent),
+    }));
+
     const mappedChat: ChatMessage[] = (chatRes.data || []).map((c) => ({
       id: c.id,
       role: c.role,
@@ -159,6 +268,19 @@ export async function loadTripData(): Promise<TripFullData> {
       createdAt: c.created_at,
     }));
 
+    // A freshly created cloud database holds only the trip row: fill it from this device
+    // (or from the built-in plan when this device has nothing worth keeping) instead of wiping local data.
+    const cloudIsEmpty =
+      mappedFlights.length + mappedActivities.length + mappedBudget.length + mappedPacking.length + mappedTasks.length === 0;
+    if (cloudIsEmpty) {
+      const local = getLocalTripData();
+      const localHasPlan = local.flights.length > 0 || local.activities.length > 0;
+      const source = withTripId(applySeedMigration(localHasPlan ? local : { ...initialTripData, trip: mappedTrip }));
+      await uploadAllToCloud(source);
+      saveLocalTripData(source);
+      return source;
+    }
+
     const fullData: TripFullData = {
       trip: mappedTrip,
       flights: mappedFlights,
@@ -166,11 +288,13 @@ export async function loadTripData(): Promise<TripFullData> {
       activities: mappedActivities,
       budgetItems: mappedBudget,
       packingItems: mappedPacking,
+      tasks: mappedTasks.length > 0 ? mappedTasks : initialTripData.tasks,
       chatMessages: mappedChat.length > 0 ? mappedChat : initialTripData.chatMessages,
     };
 
-    saveLocalTripData(fullData);
-    return fullData;
+    const migrated = applySeedMigration(fullData);
+    saveLocalTripData(migrated);
+    return migrated;
   } catch (error) {
     console.error('Error fetching data from Supabase:', error);
     return getLocalTripData();
@@ -178,7 +302,7 @@ export async function loadTripData(): Promise<TripFullData> {
 }
 
 // Sync full state helper to Supabase (when mutations occur)
-export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'budget' | 'packing' | 'trip', action: 'insert' | 'update' | 'delete', item: any) {
+export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'budget' | 'packing' | 'task' | 'trip', action: 'insert' | 'update' | 'delete', item: any) {
   if (!isSupabaseConfigured || !supabase) {
     return;
   }
@@ -193,12 +317,12 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
           end_date: item.endDate,
           notes: item.notes,
         };
-        await supabase.from('trips').upsert({ id: item.id, ...payload });
+        reportSyncError(await supabase.from('trips').upsert({ id: item.id, ...payload }));
         break;
       }
       case 'activity': {
         if (action === 'delete') {
-          await supabase.from('activities').delete().eq('id', item.id);
+          reportSyncError(await supabase.from('activities').delete().eq('id', item.id));
         } else {
           const payload = {
             id: item.id,
@@ -212,14 +336,16 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
             cost: item.cost,
             status: item.status,
             order_index: item.orderIndex,
+            // העמודות lat/lng קיימות רק אחרי שמריצים את ה-ALTER ב-schema.sql
+            ...(item.lat !== undefined && item.lng !== undefined ? { lat: item.lat, lng: item.lng } : {}),
           };
-          await supabase.from('activities').upsert(payload);
+          reportSyncError(await supabase.from('activities').upsert(payload));
         }
         break;
       }
       case 'flight': {
         if (action === 'delete') {
-          await supabase.from('flights').delete().eq('id', item.id);
+          reportSyncError(await supabase.from('flights').delete().eq('id', item.id));
         } else {
           const payload = {
             id: item.id,
@@ -235,13 +361,13 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
             price: item.price,
             notes: item.notes,
           };
-          await supabase.from('flights').upsert(payload);
+          reportSyncError(await supabase.from('flights').upsert(payload));
         }
         break;
       }
       case 'lodging': {
         if (action === 'delete') {
-          await supabase.from('lodgings').delete().eq('id', item.id);
+          reportSyncError(await supabase.from('lodgings').delete().eq('id', item.id));
         } else {
           const payload = {
             id: item.id,
@@ -257,13 +383,13 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
             notes: item.notes,
             booking_url: item.bookingUrl,
           };
-          await supabase.from('lodgings').upsert(payload);
+          reportSyncError(await supabase.from('lodgings').upsert(payload));
         }
         break;
       }
       case 'budget': {
         if (action === 'delete') {
-          await supabase.from('budget_items').delete().eq('id', item.id);
+          reportSyncError(await supabase.from('budget_items').delete().eq('id', item.id));
         } else {
           const payload = {
             id: item.id,
@@ -276,13 +402,13 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
             paid_by: item.paidBy,
             expense_date: item.expenseDate,
           };
-          await supabase.from('budget_items').upsert(payload);
+          reportSyncError(await supabase.from('budget_items').upsert(payload));
         }
         break;
       }
       case 'packing': {
         if (action === 'delete') {
-          await supabase.from('packing_items').delete().eq('id', item.id);
+          reportSyncError(await supabase.from('packing_items').delete().eq('id', item.id));
         } else {
           const payload = {
             id: item.id,
@@ -292,7 +418,28 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
             assigned_to: item.assignedTo,
             is_packed: item.isPacked,
           };
-          await supabase.from('packing_items').upsert(payload);
+          reportSyncError(await supabase.from('packing_items').upsert(payload));
+        }
+        break;
+      }
+      case 'task': {
+        if (action === 'delete') {
+          reportSyncError(await supabase.from('tasks').delete().eq('id', item.id));
+        } else {
+          const payload = {
+            id: item.id,
+            trip_id: item.tripId,
+            title: item.title,
+            task_group: item.group,
+            assigned_to: item.assignedTo,
+            due_date: item.dueDate ?? null,
+            notes: item.notes ?? null,
+            is_done: item.isDone,
+            depends_on: item.dependsOn,
+            phase: item.phase ?? 'before',
+            urgent: item.urgent ?? false,
+          };
+          reportSyncError(await supabase.from('tasks').upsert(payload));
         }
         break;
       }

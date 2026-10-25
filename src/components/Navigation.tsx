@@ -1,27 +1,35 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Plane, Hotel, Wallet, Luggage, Sparkles } from 'lucide-react';
+import { Calendar, Plane, Hotel, Wallet, Luggage, ListChecks, Sparkles, Map } from 'lucide-react';
 
-export type TabType = 'timeline' | 'flights' | 'lodgings' | 'budget' | 'packing' | 'chat';
+export type TabType = 'timeline' | 'flights' | 'lodgings' | 'budget' | 'packing' | 'tasks' | 'map' | 'chat';
 
 interface NavigationProps {
   activeTab: TabType;
   onChangeTab: (tab: TabType) => void;
   packingPendingCount?: number;
+  tasksPendingCount?: number;
 }
 
-export function Navigation({ activeTab, onChangeTab, packingPendingCount = 0 }: NavigationProps) {
+export function Navigation({ activeTab, onChangeTab, packingPendingCount = 0, tasksPendingCount = 0 }: NavigationProps) {
   const tabs = [
     { id: 'timeline' as TabType, label: 'מסלול', icon: Calendar },
     { id: 'flights' as TabType, label: 'טיסות', icon: Plane },
     { id: 'lodgings' as TabType, label: 'לינה', icon: Hotel },
+    { id: 'map' as TabType, label: 'מפה', icon: Map },
     { id: 'budget' as TabType, label: 'תקציב', icon: Wallet },
     {
       id: 'packing' as TabType,
       label: 'אריזה',
       icon: Luggage,
       badge: packingPendingCount > 0 ? packingPendingCount : undefined,
+    },
+    {
+      id: 'tasks' as TabType,
+      label: 'משימות',
+      icon: ListChecks,
+      badge: tasksPendingCount > 0 ? tasksPendingCount : undefined,
     },
   ];
 
@@ -72,7 +80,7 @@ export function Navigation({ activeTab, onChangeTab, packingPendingCount = 0 }: 
 
       {/* Mobile: floating bottom dock */}
       <div className="pb-safe fixed inset-x-0 bottom-0 z-40 px-3 md:hidden">
-        <div className="mx-auto mb-2 grid max-w-md grid-cols-6 items-center rounded-2xl border border-stone-200/70 bg-white/90 p-1 shadow-xl shadow-stone-900/10 backdrop-blur-md">
+        <div className="mx-auto mb-2 grid max-w-md grid-cols-8 items-center rounded-2xl border border-stone-200/70 bg-white/90 p-1 shadow-xl shadow-stone-900/10 backdrop-blur-md">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

@@ -62,8 +62,14 @@ CREATE TABLE IF NOT EXISTS activities (
   cost NUMERIC(10, 2) DEFAULT 0,
   status TEXT DEFAULT 'planned', -- planned, completed, cancelled
   order_index INTEGER DEFAULT 0,
+  lat DOUBLE PRECISION, -- מיקום על המפה (אופציונלי)
+  lng DOUBLE PRECISION,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- למי שכבר יצר את הטבלאות: מוסיף מיקום למפה לפעילויות
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
 
 -- 5. טבלת מעקב תקציב והוצאות
 CREATE TABLE IF NOT EXISTS budget_items (
@@ -90,6 +96,22 @@ CREATE TABLE IF NOT EXISTS packing_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 6.5 משימות (עם תלויות בין משימות)
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  trip_id TEXT REFERENCES trips(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  task_group TEXT NOT NULL,
+  assigned_to TEXT DEFAULT 'שנינו', -- הוא, היא, שנינו
+  due_date DATE,
+  notes TEXT,
+  is_done BOOLEAN DEFAULT false,
+  depends_on JSONB DEFAULT '[]'::jsonb, -- מערך של מזהי משימות שחייבות להסתיים קודם
+  phase TEXT DEFAULT 'before', -- before = לסגור לפני הטיול, during = לסגור במהלך הטיול
+  urgent BOOLEAN DEFAULT false, -- לסגור בהקדם
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- 7. היסטוריית שיחות עם ה-AI
 CREATE TABLE IF NOT EXISTS chat_messages (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -107,6 +129,7 @@ ALTER TABLE lodgings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budget_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE packing_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read/write for trips" ON trips FOR ALL USING (true) WITH CHECK (true);
@@ -115,6 +138,7 @@ CREATE POLICY "Allow public read/write for lodgings" ON lodgings FOR ALL USING (
 CREATE POLICY "Allow public read/write for activities" ON activities FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read/write for budget_items" ON budget_items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read/write for packing_items" ON packing_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public read/write for tasks" ON tasks FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read/write for chat_messages" ON chat_messages FOR ALL USING (true) WITH CHECK (true);
 
 -- הכנסת נתוני הטיול המלא: וייטנאם והפיליפינים (17.11.2026 - 17.01.2027)

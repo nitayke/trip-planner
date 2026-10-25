@@ -51,6 +51,8 @@ export interface Activity {
   cost?: number;
   status: 'planned' | 'completed' | 'cancelled';
   orderIndex?: number;
+  lat?: number; // מיקום על המפה (אטרקציות שנוספו דרך המפה)
+  lng?: number;
 }
 
 export interface BudgetItem {
@@ -74,6 +76,22 @@ export interface PackingItem {
   isPacked: boolean;
 }
 
+export type TaskGroup = 'בריאות ומסמכים' | 'הכנות לטיסה' | 'הזמנות בוייטנאם' | 'הזמנות בפיליפינים';
+
+export interface TripTask {
+  id: string;
+  tripId: string;
+  title: string;
+  group: TaskGroup;
+  assignedTo: 'הוא' | 'היא' | 'שנינו';
+  dueDate?: string; // YYYY-MM-DD
+  notes?: string;
+  isDone: boolean;
+  dependsOn: string[]; // ids of tasks that must be done first
+  phase?: 'before' | 'during'; // before = close before the trip, during = close while travelling (default: before)
+  urgent?: boolean; // close as soon as possible
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -92,5 +110,6 @@ export interface TripFullData {
   activities: Activity[];
   budgetItems: BudgetItem[];
   packingItems: PackingItem[];
+  tasks: TripTask[];
   chatMessages: ChatMessage[];
 }
