@@ -1,0 +1,96 @@
+export interface Trip {
+  id: string;
+  title: string;
+  destination: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  notes?: string;
+  shareCode?: string;
+  createdAt?: string;
+}
+
+export interface Flight {
+  id: string;
+  tripId: string;
+  airline: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTime: string; // ISO string or datetime-local
+  arrivalTime: string; // ISO string or datetime-local
+  confirmationCode?: string;
+  seat?: string;
+  price?: number;
+  notes?: string;
+}
+
+export interface Lodging {
+  id: string;
+  tripId: string;
+  name: string;
+  type: 'hotel' | 'airbnb' | 'resort' | 'apartment' | 'other';
+  address: string;
+  checkInDate: string; // YYYY-MM-DD
+  checkOutDate: string; // YYYY-MM-DD
+  confirmationCode?: string;
+  price?: number;
+  contactPhone?: string;
+  notes?: string;
+  bookingUrl?: string;
+}
+
+export interface Activity {
+  id: string;
+  tripId: string;
+  activityDate: string; // YYYY-MM-DD
+  timeSlot?: string; // e.g. "10:00", "בוקר", "צהריים", "ערב"
+  title: string;
+  description?: string;
+  location?: string;
+  category: 'sightseeing' | 'food' | 'transport' | 'relaxation' | 'nature' | 'shopping' | 'attraction' | 'other';
+  cost?: number;
+  status: 'planned' | 'completed' | 'cancelled';
+  orderIndex?: number;
+}
+
+export interface BudgetItem {
+  id: string;
+  tripId: string;
+  title: string;
+  category: 'flights' | 'hotels' | 'food' | 'activities' | 'shopping' | 'transit' | 'general';
+  estimatedCost: number;
+  actualCost: number;
+  currency: string;
+  paidBy: 'הוא' | 'היא' | 'משותף';
+  expenseDate?: string;
+}
+
+export interface PackingItem {
+  id: string;
+  tripId: string;
+  title: string;
+  category: 'בגדים' | 'מסמכים וכרטיסים' | 'אלקטרוניקה' | 'רפואי וטואלטיקה' | 'שונות';
+  assignedTo: 'הוא' | 'היא' | 'שנינו';
+  isPacked: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  actionsPerformed?: Array<{
+    type: string;
+    details: string;
+  }>;
+  createdAt: string;
+}
+
+export interface TripFullData {
+  trip: Trip;
+  flights: Flight[];
+  lodgings: Lodging[];
+  activities: Activity[];
+  budgetItems: BudgetItem[];
+  packingItems: PackingItem[];
+  chatMessages: ChatMessage[];
+}
