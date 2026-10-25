@@ -2,6 +2,7 @@ import { TripFullData } from '../types/trip';
 import { tripFlights } from './tripFlights';
 import { tripTasks } from './tripTasks';
 import { tripLodgings } from './tripLodgings';
+import { tripBudget } from './tripBudget';
 
 export const initialTripData: TripFullData = {
   trip: {
@@ -543,69 +544,7 @@ export const initialTripData: TripFullData = {
       orderIndex: 1,
     },
   ],
-  budgetItems: [
-    {
-      id: 'b-vn-1',
-      tripId: 'trip-vietnam-2026',
-      title: 'טיסות בינלאומיות הלוך חזור לוייטנאם (זוגי)',
-      category: 'flights',
-      estimatedCost: 7600,
-      actualCost: 7600,
-      currency: 'ILS',
-      paidBy: 'משותף',
-      expenseDate: '2026-10-01',
-    },
-    {
-      id: 'b-vn-2',
-      tripId: 'trip-vietnam-2026',
-      title: 'ריזורטים ומלונות בוטיק (סאפה, מאי צ׳או, טאם קוק, הויאן)',
-      category: 'hotels',
-      estimatedCost: 9500,
-      actualCost: 9500,
-      currency: 'ILS',
-      paidBy: 'משותף',
-    },
-    {
-      id: 'b-vn-3',
-      tripId: 'trip-vietnam-2026',
-      title: 'קרוז יוקרתי במפרץ האלונג (2 ימים)',
-      category: 'hotels',
-      estimatedCost: 1900,
-      actualCost: 1900,
-      currency: 'ILS',
-      paidBy: 'הוא',
-    },
-    {
-      id: 'b-vn-4',
-      tripId: 'trip-vietnam-2026',
-      title: 'סיור הא ג׳יאנג לופ (מדריכים ואופנועים/ג׳יפ ל-3 ימים)',
-      category: 'activities',
-      estimatedCost: 1500,
-      actualCost: 1400,
-      currency: 'ILS',
-      paidBy: 'הוא',
-    },
-    {
-      id: 'b-vn-5',
-      tripId: 'trip-vietnam-2026',
-      title: 'תקציב אוכל ומסעדות (חודש שלם)',
-      category: 'food',
-      estimatedCost: 3500,
-      actualCost: 800,
-      currency: 'ILS',
-      paidBy: 'משותף',
-    },
-    {
-      id: 'b-vn-6',
-      tripId: 'trip-vietnam-2026',
-      title: 'קניות בהויאן (תפירת בגדים, משי, מזכרות)',
-      category: 'shopping',
-      estimatedCost: 2000,
-      actualCost: 0,
-      currency: 'ILS',
-      paidBy: 'היא',
-    },
-  ],
+  budgetItems: tripBudget,
   packingItems: [
     {
       id: 'p-vn-1',

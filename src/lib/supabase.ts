@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { TripFullData, Trip, Flight, Lodging, Activity, BudgetItem, PackingItem, TripTask, ChatMessage } from '../types/trip';
 import { initialTripData } from './mockData';
 import { tripLodgings, placeholderLodgingIds } from './tripLodgings';
+import { tripBudget, placeholderBudgetIds } from './tripBudget';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -69,11 +70,39 @@ export function saveLocalTripData(data: TripFullData) {
 }
 
 const SEED_MIGRATION_KEY = 'trip_seed_migration_v5';
+const BUDGET_MIGRATION_KEY = 'trip_seed_migration_v6';
 
 // One-time update for data that was saved before the real hotel bookings and the
 // cancellation reminders existed: drops the old placeholder hotels, adds what is missing
 // (by id) and pushes it to Supabase.
 function applySeedMigration(data: TripFullData): TripFullData {
+  return applyBudgetMigration(applyLodgingMigration(data));
+}
+
+// Replaces the sample budget with the real flights and hotels (by id, so it never duplicates)
+function applyBudgetMigration(data: TripFullData): TripFullData {
+  if (typeof window === 'undefined') return data;
+  try {
+    if (localStorage.getItem(BUDGET_MIGRATION_KEY)) return data;
+
+    const placeholders = new Set(placeholderBudgetIds);
+    const removed = data.budgetItems.filter((b) => placeholders.has(b.id));
+    const kept = data.budgetItems.filter((b) => !placeholders.has(b.id));
+    const keptIds = new Set(kept.map((b) => b.id));
+    const added = tripBudget.filter((b) => !keptIds.has(b.id));
+
+    removed.forEach((b) => syncTripItem('budget', 'delete', { id: b.id }));
+    added.forEach((b) => syncTripItem('budget', 'insert', b));
+
+    localStorage.setItem(BUDGET_MIGRATION_KEY, new Date().toISOString());
+    return { ...data, budgetItems: [...kept, ...added] };
+  } catch (e) {
+    console.error('Budget migration failed', e);
+    return data;
+  }
+}
+
+function applyLodgingMigration(data: TripFullData): TripFullData {
   if (typeof window === 'undefined') return data;
   try {
     if (localStorage.getItem(SEED_MIGRATION_KEY)) return data;
