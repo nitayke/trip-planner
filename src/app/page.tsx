@@ -13,7 +13,6 @@ import { BudgetTab } from '../components/BudgetTab';
 import { PackingTab } from '../components/PackingTab';
 import { AiChatDrawer } from '../components/AiChatDrawer';
 import { CloudSyncModal } from '../components/CloudSyncModal';
-import { Sparkles } from 'lucide-react';
 
 export default function HomePage() {
   const [tripData, setTripData] = useState<TripFullData>(initialTripData);
@@ -306,7 +305,7 @@ export default function HomePage() {
   const pendingPackingCount = tripData.packingItems.filter((i) => !i.isPacked).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pb-20 md:pb-10">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <Header
         trip={tripData.trip}
@@ -329,7 +328,7 @@ export default function HomePage() {
       />
 
       {/* Main Content Area */}
-      <main className="max-w-6xl w-full mx-auto px-4 py-6 flex-1">
+      <main className="max-w-6xl w-full mx-auto px-4 pt-6 md:pt-8 pb-28 md:pb-12 flex-1">
         {activeTab === 'timeline' && (
           <TimelineTab
             trip={tripData.trip}
@@ -379,15 +378,6 @@ export default function HomePage() {
           />
         )}
       </main>
-
-      {/* Floating AI Button (Mobile & Desktop) */}
-      <button
-        onClick={() => setIsAiDrawerOpen(true)}
-        className="fixed bottom-20 md:bottom-8 left-5 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-slate-950 font-bold shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all group"
-      >
-        <Sparkles className="w-5 h-5 fill-slate-950 animate-pulse" />
-        <span className="text-xs sm:text-sm">צ׳אט עם ה-AI</span>
-      </button>
 
       {/* AI Assistant Drawer Modal */}
       <AiChatDrawer

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Trip } from '../types/trip';
-import { Calendar, MapPin, Cloud, CloudOff, Sparkles, Heart } from 'lucide-react';
+import { Calendar, Cloud, CloudOff, Sparkles } from 'lucide-react';
+import { routeStops, countryStyle, stopForDate } from '../lib/route';
 
 interface HeaderProps {
   trip: Trip;
@@ -11,104 +12,128 @@ interface HeaderProps {
   onOpenAiChat: () => void;
 }
 
-export function Header({
-  trip,
-  isCloudConnected,
-  onOpenCloudModal,
-  onOpenAiChat,
-}: HeaderProps) {
-  const [daysRemainingText, setDaysRemainingText] = React.useState<string>('מתכוננים לטיסה ✈️');
+const DAY_MS = 1000 * 60 * 60 * 24;
 
+function formatShort(date: string) {
+  const [, m, d] = date.split('-');
+  return `${Number(d)}.${Number(m)}`;
+}
+
+export function Header({ trip, isCloudConnected, onOpenCloudModal, onOpenAiChat }: HeaderProps) {
+  // Computed on the client only (Next.js disallows `new Date()` during prerender).
+  const [today, setToday] = React.useState<string | null>(null);
   React.useEffect(() => {
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const start = new Date(trip.startDate);
-      start.setHours(0, 0, 0, 0);
-      const diffTime = start.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays > 0) setDaysRemainingText(`עוד ${diffDays} ימים להמראה! 🚀`);
-      else if (diffDays === 0) setDaysRemainingText(`היום טסים! איזה התרגשות! ✈️`);
-      else setDaysRemainingText(`החופשה בעיצומה! תהנו מכל רגע! 🥂`);
-    } catch {
-      setDaysRemainingText('');
-    }
-  }, [trip.startDate]);
+    const d = new Date();
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setToday(iso);
+  }, []);
+
+  const totalDays =
+    Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / DAY_MS) + 1;
+
+  let countdown = '';
+  if (today) {
+    const diff = Math.round((new Date(trip.startDate).getTime() - new Date(today).getTime()) / DAY_MS);
+    if (diff > 1) countdown = `עוד ${diff} ימים להמראה`;
+    else if (diff === 1) countdown = 'טסים מחר!';
+    else if (diff === 0) countdown = 'היום טסים! ✈️';
+    else if (today <= trip.endDate) countdown = `יום ${-diff + 1} מתוך ${totalDays}`;
+    else countdown = 'הטיול הסתיים 💛';
+  }
+  const currentStop = today ? stopForDate(today) : undefined;
 
   return (
-    <header className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white shadow-lg">
-      {/* Background travel pattern / overlay */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+    <header className="relative isolate overflow-hidden text-white">
+      {/* Hero background */}
+      <img
+        src="/hero.jpg"
+        alt=""
+        fetchPriority="high"
+        className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+      />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-stone-950/30 via-stone-950/35 to-stone-950/85" />
 
-      <div className="max-w-6xl mx-auto px-4 py-5 sm:py-6 relative z-10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          
-          {/* Main Trip Header Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/20">
-                <Heart className="w-3 h-3 text-pink-300 fill-pink-300" />
-                טיול זוגי
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-400/20 text-amber-200 border border-amber-400/30">
-                {daysRemainingText}
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm flex items-center gap-2">
-              {trip.title}
-            </h1>
-
-            <div className="flex items-center gap-4 mt-2 text-blue-100 text-sm flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-sky-200 shrink-0" />
-                <span>{trip.destination}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-sky-200 shrink-0" />
-                <span>{trip.startDate} עד {trip.endDate}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Action Buttons: Cloud Sync & AI Chat */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end pt-2 sm:pt-0">
-            {/* Cloud Sync Status Button */}
+      <div className="mx-auto max-w-6xl px-4 pt-5 pb-6 sm:pt-8 sm:pb-8">
+        {/* Top bar */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium tracking-wide text-white/80">הטיול שלנו ✦</span>
+          <div className="flex items-center gap-2">
             <button
               onClick={onOpenCloudModal}
-              title={isCloudConnected ? "ענן מסונכרן חינם עם Supabase" : "לחץ לחיבור ענן 24/7 לטלפון"}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
-                isCloudConnected
-                  ? "bg-emerald-500/20 text-emerald-100 border-emerald-400/40 hover:bg-emerald-500/30"
-                  : "bg-white/10 text-white/90 border-white/20 hover:bg-white/20"
-              }`}
+              title={isCloudConnected ? 'מסונכרן לענן' : 'הנתונים נשמרים כרגע רק בדפדפן הזה'}
+              className="glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:bg-white/25"
             >
               {isCloudConnected ? (
-                <>
-                  <Cloud className="w-4 h-4 text-emerald-300 shrink-0" />
-                  <span className="hidden xs:inline">סנכרון ענן פעיל</span>
-                  <span className="xs:hidden">מסונכרן</span>
-                </>
+                <Cloud className="h-3.5 w-3.5 text-emerald-300" />
               ) : (
-                <>
-                  <CloudOff className="w-4 h-4 text-amber-300 shrink-0" />
-                  <span className="hidden xs:inline">חיבור ענן לטלפון</span>
-                  <span className="xs:hidden">חיבור ענן</span>
-                </>
+                <CloudOff className="h-3.5 w-3.5 text-amber-300" />
               )}
+              <span>{isCloudConnected ? 'מסונכרן' : 'מקומי בלבד'}</span>
             </button>
-
-            {/* AI Assistant Quick Trigger */}
             <button
               onClick={onOpenAiChat}
-              className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 shadow-md hover:shadow-lg transition-all active:scale-95"
+              className="flex items-center gap-1.5 rounded-full bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-stone-900 shadow-lg shadow-amber-500/30 transition hover:bg-amber-300 active:scale-95"
             >
-              <Sparkles className="w-4 h-4 fill-slate-950" />
+              <Sparkles className="h-3.5 w-3.5" />
               <span>עוזר AI</span>
             </button>
           </div>
+        </div>
 
+        {/* Title */}
+        <div className="mt-10 sm:mt-16">
+          {countdown && (
+            <span className="glass inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
+              {countdown}
+            </span>
+          )}
+          <h1 className="font-display mt-3 text-3xl leading-tight drop-shadow-md sm:text-5xl">{trip.title}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/85">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              {formatShort(trip.startDate)}.{trip.startDate.slice(2, 4)} – {formatShort(trip.endDate)}.
+              {trip.endDate.slice(2, 4)}
+            </span>
+            <span>·</span>
+            <span>{totalDays} ימים</span>
+            {currentStop && (
+              <>
+                <span>·</span>
+                <span>
+                  עכשיו ב{currentStop.name} {currentStop.emoji}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Route strip */}
+        <div className="scrollbar-none -mx-4 mt-6 overflow-x-auto px-4">
+          <ol className="flex min-w-max items-center gap-1.5">
+            {routeStops.map((stop, i) => {
+              const isCurrent = currentStop?.id === stop.id;
+              const isPast = today ? stop.end < today : false;
+              return (
+                <li key={stop.id} className="flex items-center gap-1.5">
+                  <div
+                    className={`glass flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs transition ${
+                      isCurrent ? 'ring-2 ring-amber-300 bg-white/30' : ''
+                    } ${isPast ? 'opacity-60' : ''} ${stop.tentative ? 'border-dashed' : ''}`}
+                  >
+                    <span>{stop.emoji}</span>
+                    <span className="font-semibold">{stop.name}</span>
+                    <span className="text-white/70">
+                      {formatShort(stop.start)}–{formatShort(stop.end)}
+                    </span>
+                    {i === 0 || routeStops[i - 1].country !== stop.country ? (
+                      <span title={countryStyle[stop.country].label}>{countryStyle[stop.country].flag}</span>
+                    ) : null}
+                  </div>
+                  {i < routeStops.length - 1 && <span className="text-white/50">‹</span>}
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </div>
     </header>

@@ -24,17 +24,17 @@ export function CloudSyncModal({ isOpen, onClose }: CloudSyncModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-2xs animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-2xs animate-in fade-in">
+      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-teal-600 to-teal-600 text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-white/20 rounded-xl">
               <Cloud className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-bold text-base">חיבור ענן חינמי (גישה מהטלפון 24/7)</h3>
-              <p className="text-xs text-blue-100">המחשב שלכם יכול להיות כבוי – הכל נשמר בענן!</p>
+              <p className="text-xs text-teal-100">המחשב שלכם יכול להיות כבוי – הכל נשמר בענן!</p>
             </div>
           </div>
           <button
@@ -46,7 +46,7 @@ export function CloudSyncModal({ isOpen, onClose }: CloudSyncModalProps) {
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-4 text-sm text-slate-700">
+        <div className="p-5 overflow-y-auto space-y-4 text-sm text-stone-700">
           {/* Status Box */}
           <div className={`p-4 rounded-2xl border ${
             isSupabaseConfigured
@@ -76,24 +76,24 @@ export function CloudSyncModal({ isOpen, onClose }: CloudSyncModalProps) {
 
           {/* 3 Step Setup Guide */}
           <div className="space-y-3">
-            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">
+            <h4 className="font-bold text-stone-800 text-xs uppercase tracking-wider">
               3 צעדים להפעלה חינמית בענן (לוקח 2 דקות):
             </h4>
 
             {/* Step 1 */}
-            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                 1
               </span>
               <div className="space-y-1">
-                <p className="font-bold text-xs text-slate-800">פתיחת פרויקט חינמי ב-Supabase</p>
-                <p className="text-xs text-slate-600">
+                <p className="font-bold text-xs text-stone-800">פתיחת פרויקט חינמי ב-Supabase</p>
+                <p className="text-xs text-stone-600">
                   היכנסו ל-{' '}
                   <a
                     href="https://supabase.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 font-semibold hover:underline inline-flex items-center gap-0.5"
+                    className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-0.5"
                   >
                     <span>supabase.com</span>
                     <ExternalLink className="w-3 h-3" />
@@ -104,19 +104,19 @@ export function CloudSyncModal({ isOpen, onClose }: CloudSyncModalProps) {
             </div>
 
             {/* Step 2 */}
-            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                 2
               </span>
               <div className="space-y-1 w-full">
-                <p className="font-bold text-xs text-slate-800">הרצת סקריפט הנתונים (SQL)</p>
-                <p className="text-xs text-slate-600">
+                <p className="font-bold text-xs text-stone-800">הרצת סקריפט הנתונים (SQL)</p>
+                <p className="text-xs text-stone-600">
                   כנסו ללשונית <strong>SQL Editor</strong> ב-Supabase והדביקו את הסקריפט מתוך התיקייה{' '}
-                  <code className="bg-slate-200 px-1 py-0.5 rounded text-[11px]">supabase/schema.sql</code>.
+                  <code className="bg-stone-200 px-1 py-0.5 rounded text-[11px]">supabase/schema.sql</code>.
                 </p>
                 <button
                   onClick={handleCopySqlInstructions}
-                  className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
+                  className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-teal-600 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'הועתק!' : 'העתק הוראות ללוח'}</span>
@@ -125,38 +125,38 @@ export function CloudSyncModal({ isOpen, onClose }: CloudSyncModalProps) {
             </div>
 
             {/* Step 3 */}
-            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                 3
               </span>
               <div className="space-y-1">
-                <p className="font-bold text-xs text-slate-800">העלאה בחינם ל-Vercel</p>
-                <p className="text-xs text-slate-600">
+                <p className="font-bold text-xs text-stone-800">העלאה בחינם ל-Vercel</p>
+                <p className="text-xs text-stone-600">
                   מעלים את הפרויקט בחינם ל-{' '}
                   <a
                     href="https://vercel.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 font-semibold hover:underline inline-flex items-center gap-0.5"
+                    className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-0.5"
                   >
                     <span>vercel.com</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>{' '}
                   ומגדירים את משתני הסביבה:
                   <br />
-                  <code className="text-[11px] text-slate-800">NEXT_PUBLIC_SUPABASE_URL</code>
+                  <code className="text-[11px] text-stone-800">NEXT_PUBLIC_SUPABASE_URL</code>
                   <br />
-                  <code className="text-[11px] text-slate-800">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
+                  <code className="text-[11px] text-stone-800">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
                   <br />
-                  <code className="text-[11px] text-slate-800">GEMINI_API_KEY</code>
+                  <code className="text-[11px] text-stone-800">GEMINI_API_KEY</code>
                 </p>
               </div>
             </div>
           </div>
 
           {/* Mobile tip */}
-          <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 flex items-center gap-2.5 text-xs text-blue-900">
-            <Smartphone className="w-5 h-5 text-blue-600 shrink-0" />
+          <div className="p-3 bg-gradient-to-r from-teal-50 to-teal-50 rounded-2xl border border-teal-100 flex items-center gap-2.5 text-xs text-teal-900">
+            <Smartphone className="w-5 h-5 text-teal-600 shrink-0" />
             <span>
               <strong>טיפ לנייד:</strong> פתחו את הכתובת של Vercel בספארי (אייפון) או כרום (אנדרואיד) ולחצו על <strong>״הוסף למסך הבית״</strong> כדי לקבל אפליקציה מושלמת!
             </span>
@@ -164,10 +164,10 @@ export function CloudSyncModal({ isOpen, onClose }: CloudSyncModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <div className="p-4 bg-stone-50 border-t border-stone-200 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition-colors"
+            className="px-5 py-2 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs transition-colors"
           >
             הבנתי, סגור
           </button>

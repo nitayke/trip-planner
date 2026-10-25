@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Activity, Trip } from '../types/trip';
+import { stopForDate, countryStyle } from '../lib/route';
 import { 
   Plus, 
   Clock, 
@@ -100,7 +101,7 @@ export function TimelineTab({
         return <Utensils className="w-4 h-4 text-amber-500" />;
       case 'sightseeing':
       case 'attraction':
-        return <Camera className="w-4 h-4 text-blue-500" />;
+        return <Camera className="w-4 h-4 text-teal-500" />;
       case 'transport':
         return <Car className="w-4 h-4 text-emerald-500" />;
       case 'relaxation':
@@ -142,131 +143,177 @@ export function TimelineTab({
 
   return (
     <div className="space-y-6">
-      {/* Date Carousel / Selector */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
-            <Calendar className="w-4 h-4 text-blue-600" />
-            <span>לוח הימים של הטיול ({daysList.length} ימים)</span>
+      {/* Day picker */}
+      <div className="rounded-2xl border border-stone-200/70 bg-white p-3 shadow-xs">
+        <div className="mb-2 flex items-center justify-between px-1">
+          <div className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+            <Calendar className="h-4 w-4 text-teal-600" />
+            <span>{daysList.length} ימים</span>
           </div>
-          <button
-            onClick={() => onOpenAiChatWithPrompt(`המלץ לי על פעילויות מעניינות ליום ${dayIndex} בתאריך ${selectedDate}`)}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>הצעות AI ליום זה</span>
-          </button>
+          <div className="flex items-center gap-3 text-[11px] text-stone-500">
+            <span className="flex items-center gap-1">
+              <span className={`h-2 w-2 rounded-full ${countryStyle.vn.dot}`} />
+              {countryStyle.vn.label}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className={`h-2 w-2 rounded-full ${countryStyle.ph.dot}`} />
+              {countryStyle.ph.label}
+            </span>
+          </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="scrollbar-none flex snap-x gap-1.5 overflow-x-auto pb-1">
           {daysList.map((dateStr, idx) => {
             const isSelected = dateStr === selectedDate;
             const count = activities.filter((a) => a.activityDate === dateStr).length;
+            const stop = stopForDate(dateStr);
+            const prevStop = idx > 0 ? stopForDate(daysList[idx - 1]) : undefined;
+            const isNewStop = stop && stop.id !== prevStop?.id;
+            const accent = stop?.country === 'ph' ? 'sky' : stop ? 'emerald' : 'stone';
             return (
-              <button
-                key={dateStr}
-                onClick={() => setSelectedDate(dateStr)}
-                className={`flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-xl transition-all ${
-                  isSelected
-                    ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/30'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60'
-                }`}
-              >
-                <span className={`text-[11px] font-medium ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
-                  יום {idx + 1}
+              <div key={dateStr} className="flex shrink-0 snap-start flex-col gap-1">
+                <span
+                  className={`h-4 truncate px-1 text-[10px] font-semibold ${
+                    accent === 'sky' ? 'text-sky-700' : accent === 'emerald' ? 'text-emerald-700' : 'text-stone-400'
+                  }`}
+                >
+                  {isNewStop ? `${stop.emoji} ${stop.name}` : ''}
                 </span>
-                <span className="text-xs font-bold whitespace-nowrap mt-0.5">
-                  {formatHebrewDate(dateStr)}
-                </span>
-                {count > 0 && (
-                  <span
-                    className={`mt-1 text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      isSelected ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {count} פעילויות
+                <button
+                  onClick={() => setSelectedDate(dateStr)}
+                  className={`relative flex w-14 flex-col items-center rounded-xl border py-2 transition ${
+                    isSelected
+                      ? 'border-teal-700 bg-teal-700 text-white shadow-md shadow-teal-900/20'
+                      : accent === 'sky'
+                      ? 'border-sky-100 bg-sky-50/60 text-stone-700 hover:bg-sky-100'
+                      : accent === 'emerald'
+                      ? 'border-emerald-100 bg-emerald-50/60 text-stone-700 hover:bg-emerald-100'
+                      : 'border-dashed border-stone-200 bg-stone-50 text-stone-500 hover:bg-stone-100'
+                  }`}
+                >
+                  <span className={`text-[10px] ${isSelected ? 'text-teal-100' : 'text-stone-400'}`}>
+                    {new Intl.DateTimeFormat('he-IL', { weekday: 'short' }).format(new Date(dateStr))}
                   </span>
-                )}
-              </button>
+                  <span className="text-lg font-bold leading-tight">{Number(dateStr.slice(8, 10))}</span>
+                  <span className={`text-[10px] ${isSelected ? 'text-teal-100' : 'text-stone-500'}`}>
+                    {new Intl.DateTimeFormat('he-IL', { month: 'short' }).format(new Date(dateStr))}
+                  </span>
+                  {count > 0 && (
+                    <span
+                      className={`absolute top-1.5 left-1.5 h-1.5 w-1.5 rounded-full ${
+                        isSelected ? 'bg-amber-300' : 'bg-teal-600'
+                      }`}
+                    />
+                  )}
+                </button>
+                <span className="text-center text-[9px] text-stone-400">יום {idx + 1}</span>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Selected Day Header & Add Activity Button */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <span>יום {dayIndex}: {formatHebrewDate(selectedDate)}</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {currentDayActivities.length === 0
-              ? 'עדיין אין פעילויות מתוכננות ליום זה. אפשר להוסיף ידנית או לבקש מה-AI!'
-              : `${currentDayActivities.length} פעילויות מתוכננות`}
-          </p>
-        </div>
+      {/* Selected day header */}
+      {(() => {
+        const stop = stopForDate(selectedDate);
+        return (
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-medium text-stone-500">
+                <span>יום {dayIndex}</span>
+                <span>·</span>
+                <span>{formatHebrewDate(selectedDate)}</span>
+                {stop && (
+                  <span className={`rounded-full px-2 py-0.5 ring-1 ${countryStyle[stop.country].chip}`}>
+                    {countryStyle[stop.country].flag} {countryStyle[stop.country].label}
+                  </span>
+                )}
+              </div>
+              <h2 className="font-display mt-1 text-2xl text-stone-900 sm:text-3xl">
+                {stop ? `${stop.emoji} ${stop.name}` : 'יום פתוח – עוד לא מתוכנן'}
+              </h2>
+              <p className="mt-0.5 text-xs text-stone-500">
+                {currentDayActivities.length === 0
+                  ? 'אין עדיין פעילויות ליום הזה'
+                  : `${currentDayActivities.length} פעילויות`}
+              </p>
+            </div>
 
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{showAddForm ? 'ביטול' : 'הוספת פעילות'}</span>
-        </button>
-      </div>
-
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  onOpenAiChatWithPrompt(
+                    `תציע פעילויות ליום ${dayIndex} (${selectedDate})${stop ? ` ב${stop.name}` : ''}`
+                  )
+                }
+                className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>רעיונות מה-AI</span>
+              </button>
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="flex items-center gap-1.5 rounded-xl bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-teal-900/15 transition hover:bg-teal-800"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{showAddForm ? 'ביטול' : 'הוספת פעילות'}</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
       {/* Add Activity Inline Form */}
       {showAddForm && (
         <form
           onSubmit={handleCreateActivity}
-          className="bg-white p-4 sm:p-5 rounded-2xl border border-blue-200 shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2"
+          className="bg-white p-4 sm:p-5 rounded-2xl border border-teal-200 shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2"
         >
-          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Plus className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+            <Plus className="w-4 h-4 text-teal-600" />
             <span>הוספת פעילות חדשה ליום {formatHebrewDate(selectedDate)}</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">שם הפעילות או המקום *</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">שם הפעילות או המקום *</label>
               <input
                 type="text"
                 required
                 placeholder="למשל: סיור בפנתיאון וגלידה"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">שעה / חלק ביום</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">שעה / חלק ביום</label>
               <input
                 type="text"
                 placeholder="למשל: 10:00 או 'בוקר'"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">מיקום / כתובת</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">מיקום / כתובת</label>
               <input
                 type="text"
                 placeholder="למשל: Piazza della Rotonda"
                 value={newLocation}
                 onChange={(e) => setNewLocation(e.target.value)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">קטגוריה</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">קטגוריה</label>
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value as any)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
               >
                 <option value="sightseeing">סיורים ואתרים</option>
                 <option value="food">אוכל ומסעדות</option>
@@ -279,24 +326,24 @@ export function TimelineTab({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">עלות משוערת (בש״ח)</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">עלות משוערת (בש״ח)</label>
               <input
                 type="number"
                 placeholder="0"
                 value={newCost}
                 onChange={(e) => setNewCost(e.target.value)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">הערות וטיפים</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">הערות וטיפים</label>
               <input
                 type="text"
                 placeholder="כרטיסים מוזמנים מראש, להביא דרכונים"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
@@ -305,13 +352,13 @@ export function TimelineTab({
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-xl"
+              className="px-3.5 py-1.5 text-xs text-stone-600 hover:bg-stone-100 rounded-xl"
             >
               ביטול
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              className="px-4 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs"
             >
               שמור פעילות
             </button>
@@ -322,103 +369,107 @@ export function TimelineTab({
       {/* Activities Timeline List */}
       <div className="space-y-3">
         {currentDayActivities.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center">
-            <Compass className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-slate-700">אין פעילויות מתוכננות ליום זה</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+          <div className="bg-white rounded-2xl p-8 border border-stone-200 text-center">
+            <Compass className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <h3 className="text-base font-semibold text-stone-700">אין פעילויות מתוכננות ליום זה</h3>
+            <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
               תוכלו ללחוץ על ״הוספת פעילות״ למעלה, או לפתוח את צ׳אט ה-AI ולבקש ממנו: 
               <br />
-              <span className="italic text-blue-600">״תציע לנו תוכנית מושלמת ליום {dayIndex} ב{trip.destination}״</span>
+              <span className="italic text-teal-600">״תציע לנו תוכנית מושלמת ליום {dayIndex} ב{trip.destination}״</span>
             </p>
             <button
               onClick={() => onOpenAiChatWithPrompt(`תבנה לנו לוח זמנים מומלץ ליום ${dayIndex} ב${trip.destination}`)}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium text-xs transition-colors"
+              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-100 font-medium text-xs transition-colors"
             >
-              <Sparkles className="w-4 h-4 text-blue-600" />
+              <Sparkles className="w-4 h-4 text-teal-600" />
               <span>בקש המלצות מה-AI ליום זה</span>
             </button>
           </div>
         ) : (
-          <div className="relative border-r-2 border-blue-200 mr-4 pr-6 space-y-4">
+          <div className="relative border-r-2 border-teal-600/25 mr-4 pr-6 space-y-4">
             {currentDayActivities.map((act) => {
               const isDone = act.status === 'completed';
               return (
                 <div
                   key={act.id}
-                  className={`group relative bg-white p-4 rounded-2xl border transition-all ${
+                  className={`group relative bg-white p-5 rounded-2xl border transition-all duration-200 ${
                     isDone
-                      ? 'border-emerald-200/80 bg-emerald-50/20 opacity-80'
-                      : 'border-slate-200 hover:border-blue-300 hover:shadow-xs'
+                      ? 'border-emerald-200/80 bg-emerald-50/30 opacity-80'
+                      : 'border-stone-200/80 hover:border-teal-400/70 hover:shadow-md hover:-translate-y-0.5'
                   }`}
                 >
                   {/* Timeline bullet icon */}
                   <div
-                    className={`absolute -right-[33px] top-4 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center transition-colors ${
-                      isDone ? 'border-emerald-500 bg-emerald-500' : 'border-blue-600'
+                    className={`absolute -right-[33px] top-5 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center transition-colors shadow-2xs ${
+                      isDone ? 'border-emerald-500 bg-emerald-500' : 'border-teal-600 group-hover:scale-110'
                     }`}
                   >
-                    {isDone && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {isDone ? (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    ) : (
+                      <div className="w-1.5 h-1.5 rounded-full bg-teal-600" />
+                    )}
                   </div>
 
                   <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         {act.timeSlot && (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
-                            <Clock className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200/60">
+                            <Clock className="w-3 h-3 text-teal-600" />
                             {act.timeSlot}
                           </span>
                         )}
-                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
                           {getCategoryIcon(act.category)}
                           {getCategoryLabel(act.category)}
                         </span>
                         {act.cost && act.cost > 0 ? (
-                          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                          <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60">
                             ₪{act.cost}
                           </span>
                         ) : null}
                       </div>
 
                       <h4
-                        className={`text-base font-bold transition-all ${
-                          isDone ? 'line-through text-slate-400' : 'text-slate-800'
+                        className={`text-base sm:text-lg font-bold transition-all ${
+                          isDone ? 'line-through text-stone-400' : 'text-stone-900'
                         }`}
                       >
                         {act.title}
                       </h4>
 
                       {act.location && (
-                        <div className="flex items-center gap-1 text-xs text-slate-500">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{act.location}</span>
+                        <div className="flex items-center gap-1.5 text-xs text-stone-500">
+                          <MapPin className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                          <span className="font-medium text-stone-600">{act.location}</span>
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline mr-1 text-[11px]"
+                            className="inline-flex items-center gap-0.5 text-teal-700 hover:text-teal-900 font-semibold hover:underline mr-1 text-[11px] bg-teal-50/70 px-2 py-0.5 rounded-full"
                           >
-                            (פתח במפה 🗺️)
+                            <span>מפה 🗺️</span>
                           </a>
                         </div>
                       )}
 
                       {act.description && (
-                        <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50/80 p-2 rounded-xl">
+                        <p className="text-xs text-stone-600 mt-1.5 leading-relaxed bg-stone-50/90 p-3 rounded-xl border border-stone-100">
                           {act.description}
                         </p>
                       )}
                     </div>
 
                     {/* Action buttons: Toggle complete / Delete */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => onToggleStatus(act.id)}
                         title={isDone ? 'סמן כפעיל' : 'סמן כהושלם'}
-                        className={`p-1.5 rounded-lg transition-colors ${
+                        className={`p-2 rounded-xl transition-colors ${
                           isDone
-                            ? 'text-emerald-600 hover:bg-emerald-100'
-                            : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                            ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                            : 'text-stone-400 hover:text-emerald-600 hover:bg-emerald-50'
                         }`}
                       >
                         <CheckCircle2 className={`w-5 h-5 ${isDone ? 'fill-emerald-100' : ''}`} />
@@ -427,7 +478,7 @@ export function TimelineTab({
                       <button
                         onClick={() => onDeleteActivity(act.id)}
                         title="מחק פעילות"
-                        className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        className="p-2 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

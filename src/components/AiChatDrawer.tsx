@@ -141,17 +141,17 @@ export function AiChatDrawer({
   if (!isOpen && !isStandaloneTab) return null;
 
   const content = (
-    <div className="flex flex-col h-full bg-slate-50 text-slate-900">
+    <div className="flex flex-col h-full bg-stone-50 text-stone-900">
       {/* Header (Only if popup drawer) */}
       {!isStandaloneTab && (
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex items-center justify-between shadow-xs shrink-0">
+        <div className="bg-gradient-to-r from-teal-600 to-teal-600 text-white p-4 flex items-center justify-between shadow-xs shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-bold text-sm">עוזר הטיול שלכם (Gemini AI)</h3>
-              <p className="text-[11px] text-blue-100">יודע לעדכן את המערכת בזמן אמת לפי בקשתכם</p>
+              <p className="text-[11px] text-teal-100">יודע לעדכן את המערכת בזמן אמת לפי בקשתכם</p>
             </div>
           </div>
           {onClose && (
@@ -177,7 +177,7 @@ export function AiChatDrawer({
               {/* Avatar */}
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                  isUser ? 'bg-blue-600 text-white' : 'bg-gradient-to-tr from-amber-400 to-orange-500 text-slate-950 shadow-2xs'
+                  isUser ? 'bg-teal-600 text-white' : 'bg-gradient-to-tr from-amber-400 to-orange-500 text-stone-950 shadow-2xs'
                 }`}
               >
                 {isUser ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
@@ -188,8 +188,8 @@ export function AiChatDrawer({
                 <div
                   className={`p-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                     isUser
-                      ? 'bg-blue-600 text-white rounded-tl-xs shadow-xs'
-                      : 'bg-white text-slate-800 border border-slate-200/90 rounded-tr-xs shadow-2xs'
+                      ? 'bg-teal-600 text-white rounded-tl-xs shadow-xs'
+                      : 'bg-white text-stone-800 border border-stone-200/90 rounded-tr-xs shadow-2xs'
                   }`}
                 >
                   {m.content}
@@ -217,10 +217,10 @@ export function AiChatDrawer({
         {isLoading && (
           <div className="flex gap-2.5 max-w-[85%] ml-auto">
             <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-slate-950 animate-spin" />
+              <Sparkles className="w-4 h-4 text-stone-950 animate-spin" />
             </div>
-            <div className="bg-white p-3 rounded-2xl border border-slate-200/90 rounded-tr-xs shadow-2xs flex items-center gap-2 text-xs text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+            <div className="bg-white p-3 rounded-2xl border border-stone-200/90 rounded-tr-xs shadow-2xs flex items-center gap-2 text-xs text-stone-500">
+              <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
               <span>ה-AI מעבד את הבקשה ומעדכן את המערכת...</span>
             </div>
           </div>
@@ -230,12 +230,12 @@ export function AiChatDrawer({
       </div>
 
       {/* Quick Suggestions Chips */}
-      <div className="px-4 py-2 border-t border-slate-200/70 bg-white/70 backdrop-blur-xs flex gap-1.5 overflow-x-auto scrollbar-none">
+      <div className="px-4 py-2 border-t border-stone-200/70 bg-white/70 backdrop-blur-xs flex gap-1.5 overflow-x-auto scrollbar-none">
         {quickSuggestions.map((suggestion, idx) => (
           <button
             key={idx}
             onClick={() => handleSend(suggestion)}
-            className="flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200/60 transition-colors"
+            className="flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-stone-100 hover:bg-teal-50 hover:text-teal-700 text-stone-600 border border-stone-200/60 transition-colors"
           >
             {suggestion}
           </button>
@@ -243,7 +243,7 @@ export function AiChatDrawer({
       </div>
 
       {/* Input Box */}
-      <div className="p-3 bg-white border-t border-slate-200 shrink-0">
+      <div className="p-3 bg-white border-t border-stone-200 shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -257,12 +257,12 @@ export function AiChatDrawer({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 disabled:opacity-50"
+            className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-stone-50 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl shadow-xs transition-colors shrink-0"
+            className="p-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-stone-300 text-white rounded-xl shadow-xs transition-colors shrink-0"
           >
             <Send className="w-4 h-4 rotate-180" />
           </button>
@@ -273,14 +273,14 @@ export function AiChatDrawer({
 
   if (isStandaloneTab) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs h-[72vh] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs h-[72vh] overflow-hidden">
         {content}
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-2xs animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex justify-end bg-stone-900/40 backdrop-blur-2xs animate-in fade-in">
       <div className="w-full max-w-md h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-left">
         {content}
       </div>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Rubik } from "next/font/google";
+import { Rubik, Secular_One } from "next/font/google";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -8,13 +8,19 @@ const rubik = Rubik({
   variable: "--font-rubik",
 });
 
+const secular = Secular_One({
+  subsets: ["hebrew", "latin"],
+  weight: "400",
+  variable: "--font-secular",
+});
+
 export const metadata: Metadata = {
-  title: "מתכנן הטיול הזוגי שלנו ✈️",
-  description: "מערכת לתכנון טיול זוגי, מסלול יומי, טיסות, מלונות, תקציב וסוכן AI חכם",
+  title: "הטיול שלנו ✈️",
+  description: "תכנון הטיול הזוגי: מסלול יומי, טיסות, לינה, תקציב ועוזר AI",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "הטיול שלנו",
   },
 };
@@ -22,9 +28,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#2563eb",
+  viewportFit: "cover",
+  themeColor: "#0f766e",
 };
 
 export default function RootLayout({
@@ -33,11 +38,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl" className={`${rubik.variable} h-full antialiased`}>
+    <html lang="he" dir="rtl" className={`${rubik.variable} ${secular.variable} h-full antialiased`}>
       <head>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>" />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+      <body className="min-h-full flex flex-col font-sans text-stone-900 selection:bg-teal-100 selection:text-teal-900">
         {children}
       </body>
     </html>

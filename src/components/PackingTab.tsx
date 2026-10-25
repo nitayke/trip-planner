@@ -80,18 +80,18 @@ export function PackingTab({
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <CheckSquare className="w-5 h-5 text-blue-600" />
+          <h2 className="text-xl font-bold text-stone-800 flex items-center gap-2">
+            <CheckSquare className="w-5 h-5 text-teal-600" />
             <span>רשימת ציוד ואריזה ({packedCount}/{totalCount})</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-stone-500 mt-0.5">
             כל מה שצריך לקחת במזוודות, מסודר לפי קטגוריות ולפי מי שאחראי
           </p>
         </div>
 
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{showAddForm ? 'ביטול' : 'הוספת פריט'}</span>
@@ -99,20 +99,20 @@ export function PackingTab({
       </div>
 
       {/* Progress Bar Card */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+      <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
+        <div className="flex items-center justify-between text-xs font-bold text-stone-700 mb-2">
           <span>התקדמות אריזה: {progressPercent}%</span>
-          <span className="text-slate-500 font-normal">
+          <span className="text-stone-500 font-normal">
             נארזו {packedCount} מתוך {totalCount} פריטים
           </span>
         </div>
-        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-500 ${
               progressPercent === 100
                 ? 'bg-emerald-500'
                 : progressPercent > 50
-                ? 'bg-blue-600'
+                ? 'bg-teal-600'
                 : 'bg-amber-500'
             }`}
             style={{ width: `${progressPercent}%` }}
@@ -131,8 +131,8 @@ export function PackingTab({
           onClick={() => setFilterPerson('all')}
           className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
             filterPerson === 'all'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              ? 'bg-teal-600 text-white shadow-2xs'
+              : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -143,8 +143,8 @@ export function PackingTab({
           onClick={() => setFilterPerson('שנינו')}
           className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
             filterPerson === 'שנינו'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              ? 'bg-teal-600 text-white shadow-2xs'
+              : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
           }`}
         >
           <span>שנינו יחד</span>
@@ -154,8 +154,8 @@ export function PackingTab({
           onClick={() => setFilterPerson('הוא')}
           className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
             filterPerson === 'הוא'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              ? 'bg-teal-600 text-white shadow-2xs'
+              : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
           }`}
         >
           <User className="w-3.5 h-3.5" />
@@ -166,8 +166,8 @@ export function PackingTab({
           onClick={() => setFilterPerson('היא')}
           className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
             filterPerson === 'היא'
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              ? 'bg-teal-600 text-white shadow-2xs'
+              : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
           }`}
         >
           <User className="w-3.5 h-3.5" />
@@ -177,9 +177,9 @@ export function PackingTab({
         <div className="mr-auto">
           <button
             onClick={() => onOpenAiChatWithPrompt('תציע רשימת פריטים חיוניים שאולי שכחנו לארוז לטיול')}
-            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium bg-blue-50 px-2.5 py-1.5 rounded-xl"
+            className="text-xs text-teal-600 hover:text-teal-700 flex items-center gap-1 font-medium bg-teal-50 px-2.5 py-1.5 rounded-xl"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+            <Sparkles className="w-3.5 h-3.5 text-teal-500" />
             <span>הצעות AI לרשימה</span>
           </button>
         </div>
@@ -189,32 +189,32 @@ export function PackingTab({
       {showAddForm && (
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-4 rounded-2xl border border-blue-200 shadow-sm space-y-3 animate-in fade-in"
+          className="bg-white p-4 rounded-2xl border border-teal-200 shadow-sm space-y-3 animate-in fade-in"
         >
-          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Plus className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+            <Plus className="w-4 h-4 text-teal-600" />
             <span>הוספת פריט לאריזה</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">שם הפריט *</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">שם הפריט *</label>
               <input
                 type="text"
                 required
                 placeholder="למשל: קרם הגנה, מברשת שיניים"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">קטגוריה</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">קטגוריה</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
               >
                 <option value="בגדים">בגדים</option>
                 <option value="מסמכים וכרטיסים">מסמכים וכרטיסים</option>
@@ -225,11 +225,11 @@ export function PackingTab({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">עבור מי?</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">עבור מי?</label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value as any)}
-                className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
               >
                 <option value="שנינו">שנינו</option>
                 <option value="הוא">הוא</option>
@@ -242,13 +242,13 @@ export function PackingTab({
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded-xl"
+              className="px-3 py-1 text-xs text-stone-600 hover:bg-stone-100 rounded-xl"
             >
               ביטול
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              className="px-4 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs"
             >
               הוסף פריט
             </button>
@@ -263,36 +263,36 @@ export function PackingTab({
           if (catItems.length === 0) return null;
 
           return (
-            <div key={cat} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 font-bold text-xs text-slate-700 flex items-center justify-between">
+            <div key={cat} className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs overflow-hidden">
+              <div className="px-4 py-2.5 bg-stone-50 border-b border-stone-100 font-bold text-xs text-stone-700 flex items-center justify-between">
                 <span>{cat}</span>
-                <span className="text-slate-400 font-normal">
+                <span className="text-stone-400 font-normal">
                   {catItems.filter((i) => i.isPacked).length}/{catItems.length} נארזו
                 </span>
               </div>
 
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-stone-100">
                 {catItems.map((item) => (
                   <div
                     key={item.id}
                     onClick={() => handleToggle(item.id, item.isPacked)}
-                    className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 cursor-pointer transition-colors"
+                    className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-stone-50/70 cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {item.isPacked ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-100 shrink-0" />
                       ) : (
-                        <Circle className="w-5 h-5 text-slate-300 shrink-0" />
+                        <Circle className="w-5 h-5 text-stone-300 shrink-0" />
                       )}
                       <div>
                         <span
                           className={`text-sm font-medium ${
-                            item.isPacked ? 'line-through text-slate-400' : 'text-slate-800'
+                            item.isPacked ? 'line-through text-stone-400' : 'text-stone-800'
                           }`}
                         >
                           {item.title}
                         </span>
-                        <span className="mr-2 text-[10px] px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-500 font-medium">
+                        <span className="mr-2 text-[10px] px-1.5 py-0.2 rounded-md bg-stone-100 text-stone-500 font-medium">
                           {item.assignedTo}
                         </span>
                       </div>
@@ -304,7 +304,7 @@ export function PackingTab({
                         onDeletePackingItem(item.id);
                       }}
                       title="מחק פריט"
-                      className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      className="p-1 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
