@@ -117,16 +117,16 @@ CREATE POLICY "Allow public read/write for budget_items" ON budget_items FOR ALL
 CREATE POLICY "Allow public read/write for packing_items" ON packing_items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read/write for chat_messages" ON chat_messages FOR ALL USING (true) WITH CHECK (true);
 
--- הכנסת נתוני הטיול לוייטנאם (17.11 - 19.12)
+-- הכנסת נתוני הטיול המלא: וייטנאם והפיליפינים (17.11.2026 - 17.01.2027)
 INSERT INTO trips (id, title, destination, start_date, end_date, notes, share_code)
 VALUES (
-  'trip-vietnam-2026',
-  'הטיול הזוגי שלנו לוייטנאם 🇻🇳🎋',
-  'וייטנאם (סאפה, הא ג׳יאנג, מאי צ׳או, האנוי, קאו בנג, האלונג ביי, טאם קוק, הויאן ודה נאנג)',
+  'trip-vietnam-philippines-2026',
+  'המסע הגדול: וייטנאם 🇻🇳 והפיליפינים 🇵🇭',
+  'וייטנאם (17.11 - 19.12) & הפיליפינים (20.12 - 17.01)',
   '2026-11-17',
-  '2026-12-19',
-  'מסלול הטיול המלא לפי לוח השנה: טיסה 17.11 ➔ סאפה ➔ הא ג׳יאנג לופ ➔ מאי צ׳או ➔ האנוי ➔ קאו בנג לופ ➔ מפרץ האלונג ➔ טאם קוק ➔ הויאן + הואה ודה נאנג!',
-  'VIETNAM26'
+  '2027-01-17',
+  'טיול חלומי של חודשיים שלמים (17.11.2026 עד 17.01.2027 - 62 ימים)! חלק א׳: וייטנאם (סאפה, הא ג׳יאנג, מאי צ׳או, האנוי, קאו בנג, האלונג, טאם קוק, הויאן). חלק ב׳: הפיליפינים - איים טרופיים, חופים, שוניות, לגונות וסילבסטר 2027!',
+  'VNPH2627'
 ) ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
   destination = EXCLUDED.destination,
@@ -136,6 +136,9 @@ VALUES (
 
 INSERT INTO flights (id, trip_id, airline, flight_number, departure_airport, arrival_airport, departure_time, arrival_time, confirmation_code, price, notes)
 VALUES
-('flight-vn-1', 'trip-vietnam-2026', 'טיסה לוייטנאם', 'VN-TLV', 'נתב״ג טרמינל 3 (TLV)', 'האנוי נוי ביי (HAN)', '2026-11-17 18:00:00+00', '2026-11-18 10:30:00+00', 'VN7892X', 3800, 'המראה ב-18:00 כפי שמופיע בלוח השנה')
+('flight-vn-1', 'trip-vietnam-philippines-2026', 'טיסה הלוך לוייטנאם', 'VN-TLV', 'נתב״ג טרמינל 3 (TLV)', 'האנוי נוי ביי (HAN)', '2026-11-17 18:00:00+00', '2026-11-18 10:30:00+00', 'VN7892X', 3800, 'המראה ב-18:00 כפי שמופיע בלוח השנה'),
+('flight-ph-2', 'trip-vietnam-philippines-2026', 'טיסת מעבר: וייטנאם ➔ פיליפינים', 'PR592', 'דה נאנג / האנוי', 'מנילה / סבו (MNL/CEB)', '2026-12-20 10:00:00+00', '2026-12-20 14:30:00+00', 'PR8823K', 1200, 'טיסת מעבר בין וייטנאם לפיליפינים'),
+('flight-ph-3', 'trip-vietnam-philippines-2026', 'טיסה חזרה לישראל', 'PH-TLV', 'מנילה (MNL)', 'נתב״ג טרמינל 3 (TLV)', '2027-01-17 19:30:00+00', '2027-01-18 05:00:00+00', 'HOMETLV27', 3900, 'טיסה חזור בסיום חודשיים מושלמים!')
 ON CONFLICT (id) DO NOTHING;
+
 
