@@ -38,6 +38,8 @@ export const routeStops: RouteStop[] = [
   { id: 'manila', name: 'מנילה', country: 'ph', start: '2027-01-14', end: '2027-01-16', lastNight: '2027-01-15', emoji: '🌆', lat: 14.5995, lng: 120.9842, arriveBy: 'flight' },
 ];
 
+export const stopById = (id?: string): RouteStop | undefined => routeStops.find((s) => s.id === id);
+
 export function stopForDate(date: string): RouteStop | undefined {
   return routeStops.find((s) => date >= s.start && date <= s.end);
 }
@@ -53,7 +55,7 @@ const addDays = (iso: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-export type LodgingStatus = 'booked' | 'partial' | 'none';
+export type LodgingStatus = 'booked' | 'partial' | 'none' | 'notNeeded';
 
 export interface StopLodging {
   status: LodgingStatus;
@@ -62,7 +64,8 @@ export interface StopLodging {
 }
 
 // לילה שייך ללינה אם check-in <= הלילה < check-out
-export function lodgingForStop(stop: RouteStop, lodgings: Lodging[]): StopLodging {
+// noHotelStops: destinations the user marked as not needing a hotel (shown as 'notNeeded' unless a hotel is booked anyway)
+export function lodgingForStop(stop: RouteStop, lodgings: Lodging[], noHotelStops: string[] = []): StopLodging {
   const lastNight = stop.lastNight ?? stop.end;
   const nights: string[] = [];
   for (let d = stop.start; d <= lastNight; d = addDays(d, 1)) nights.push(d);
@@ -71,6 +74,9 @@ export function lodgingForStop(stop: RouteStop, lodgings: Lodging[]): StopLodgin
   const missingNights = nights.filter((n) => !covered(n));
   const used = lodgings.filter((l) => nights.some((n) => l.checkInDate <= n && n < l.checkOutDate));
 
+  if (missingNights.length > 0 && noHotelStops.includes(stop.id)) {
+    return { status: 'notNeeded', lodgings: used, missingNights: [] };
+  }
   const status: LodgingStatus =
     missingNights.length === 0 ? 'booked' : missingNights.length === nights.length ? 'none' : 'partial';
   return { status, lodgings: used, missingNights };

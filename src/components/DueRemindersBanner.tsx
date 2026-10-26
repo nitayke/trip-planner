@@ -12,6 +12,9 @@ interface DueRemindersBannerProps {
 
 const SOON_DAYS = 3;
 
+// A task comes up on its deadline, or on the date it is tied to a person
+const dateOf = (t: TripTask) => t.dueDate ?? t.linkedDate;
+
 const addDays = (iso: string, n: number) => {
   const d = new Date(`${iso}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
@@ -30,8 +33,8 @@ export function DueRemindersBanner({ tasks, onOpenTasks }: DueRemindersBannerPro
   if (!today) return null;
   const limit = addDays(today, SOON_DAYS);
   const due = tasks
-    .filter((t) => !t.isDone && t.dueDate && t.dueDate <= limit)
-    .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
+    .filter((t) => !t.isDone && dateOf(t) && dateOf(t)! <= limit)
+    .sort((a, b) => dateOf(a)!.localeCompare(dateOf(b)!));
   if (due.length === 0) return null;
 
   return (
@@ -46,8 +49,8 @@ export function DueRemindersBanner({ tasks, onOpenTasks }: DueRemindersBannerPro
       <ul className="mt-2 space-y-1">
         {due.slice(0, 5).map((t) => (
           <li key={t.id} className="flex items-center gap-2 text-xs text-amber-950">
-            <span className={`font-bold ${t.dueDate! < today ? 'text-rose-700' : ''}`}>
-              {t.dueDate! < today ? 'באיחור' : t.dueDate === today ? 'היום' : formatDM(t.dueDate!)}
+            <span className={`font-bold ${dateOf(t)! < today ? 'text-rose-700' : ''}`}>
+              {dateOf(t)! < today ? 'באיחור' : dateOf(t) === today ? 'היום' : formatDM(dateOf(t)!)}
             </span>
             <span>{t.title}</span>
           </li>

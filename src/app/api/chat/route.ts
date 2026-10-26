@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
 import { Activity, Flight, Lodging } from '../../../types/trip';
+import { routeStops } from '../../../lib/route';
 
 // Define functions/tools for Gemini
 const tripFunctions: FunctionDeclaration[] = [
   {
     name: 'add_activity',
-    description: 'הוספת פעילות, אטרקציה, מסעדה או נקודת עניין למסלול היומי',
+    description: 'הוספת פעילות, אטרקציה, מסעדה או נקודת עניין ליעד במסלול. הפעילות שייכת ליעד, לא ליום',
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
+        stopId: {
+          type: SchemaType.STRING,
+          description: `מזהה היעד שהפעילות שייכת אליו, אחד מ: ${routeStops.map((s) => `${s.id} (${s.name})`).join(', ')}`,
+        },
         activityDate: {
           type: SchemaType.STRING,
-          description: 'תאריך הפעילות בפורמט YYYY-MM-DD (למשל 2026-05-10)',
+          description: 'תאריך YYYY-MM-DD. למלא רק אם המשתמש אמר במפורש באיזה יום, אחרת להשאיר ריק ולא להמציא יום',
         },
         title: {
           type: SchemaType.STRING,
@@ -39,7 +44,7 @@ const tripFunctions: FunctionDeclaration[] = [
           description: 'תיאור קצר, טיפים או הערות',
         },
       },
-      required: ['activityDate', 'title'],
+      required: ['stopId', 'title'],
     },
   },
   {
@@ -52,7 +57,8 @@ const tripFunctions: FunctionDeclaration[] = [
         title: { type: SchemaType.STRING, description: 'שם הפעילות הנוכחי, אם אין id' },
         currentDate: { type: SchemaType.STRING, description: 'התאריך הנוכחי של הפעילות YYYY-MM-DD, לבחירה בין פעילויות דומות' },
         newTitle: { type: SchemaType.STRING, description: 'שם חדש' },
-        activityDate: { type: SchemaType.STRING, description: 'תאריך חדש YYYY-MM-DD' },
+        stopId: { type: SchemaType.STRING, description: 'מזהה יעד חדש, להעברת הפעילות ליעד אחר' },
+        activityDate: { type: SchemaType.STRING, description: 'יום חדש YYYY-MM-DD, רק אם המשתמש קבע אותו במפורש' },
         timeSlot: { type: SchemaType.STRING, description: 'שעה חדשה או חלק ביום' },
         location: { type: SchemaType.STRING, description: 'מיקום חדש' },
         category: { type: SchemaType.STRING, description: 'קטגוריה: sightseeing, food, transport, relaxation, nature, shopping, attraction, other' },
@@ -272,8 +278,11 @@ export async function POST(req: NextRequest) {
 תאריכים: ${currentTripData?.trip?.startDate} עד ${currentTripData?.trip?.endDate}
 רשימת אריזה: ${currentTripData?.packingItems?.length || 0} פריטים
 
-הפעילויות הקיימות (מזהה | תאריך | שעה | שם | מיקום):
-${list(currentTripData?.activities, (a: Activity) => `${a.id} | ${a.activityDate} | ${a.timeSlot ?? ''} | ${a.title} | ${a.location ?? ''}`)}
+היעדים במסלול (מזהה | שם | תאריכים):
+${routeStops.map((s) => `${s.id} | ${s.name} | ${s.start} עד ${s.end}`).join('\n')}
+
+הפעילויות הקיימות (מזהה | יעד | יום אם נקבע | שעה | שם | מיקום):
+${list(currentTripData?.activities, (a: Activity) => `${a.id} | ${a.stopId ?? 'ללא יעד'} | ${a.activityDate ?? 'לא נקבע'} | ${a.timeSlot ?? ''} | ${a.title} | ${a.location ?? ''}`)}
 
 הטיסות הקיימות (מזהה | מספר | חברה | מסלול | המראה):
 ${list(currentTripData?.flights, (f: Flight) => `${f.id} | ${f.flightNumber} | ${f.airline} | ${f.departureAirport} -> ${f.arrivalAirport} | ${f.departureTime}`)}
@@ -283,7 +292,7 @@ ${list(currentTripData?.lodgings, (l: Lodging) => `${l.id} | ${l.name} | ${l.che
 
 הנחיות חשובות:
 1. כאשר המשתמש מבקש להוסיף, לעדכן או למחוק משהו (פעילות, טיסה, מלון, פריט לאריזה, הוצאה בתקציב) - **הפעל תמיד את הפונקציה המתאימה**. לעריכה ומחיקה של פעילות, טיסה או מלון קיימים השתמש ב-id מהרשימות למעלה.
-2. אם המשתמש לא מציין תאריך מדויק לפעילות, הסק אותו באופן הגיוני מתוך תאריכי הטיול (בין ${currentTripData?.trip?.startDate} ל-${currentTripData?.trip?.endDate}) או שאל בנימוס.
+2. פעילויות שייכות ליעד (stopId), לא ליום. אל תקבע באיזה יום הפעילות מתקיימת אלא אם המשתמש אמר זאת במפורש; אם לא נאמר יום, השאר את activityDate ריק.
 3. דבר תמיד בעברית טבעית, נעימה, קולחת ומסבירת פנים.
 4. בסיום הפעולה, הסבר בקצרה ובחיוביות מה עודכן במערכת.
     `;

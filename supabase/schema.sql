@@ -53,7 +53,8 @@ CREATE TABLE IF NOT EXISTS lodgings (
 CREATE TABLE IF NOT EXISTS activities (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   trip_id TEXT REFERENCES trips(id) ON DELETE CASCADE,
-  activity_date DATE NOT NULL,
+  stop_id TEXT, -- היעד (route stop) שהפעילות שייכת אליו
+  activity_date DATE, -- רק כשהיום נקבע במפורש
   time_slot TEXT, -- e.g. "09:30", "בוקר", "ערב"
   title TEXT NOT NULL,
   description TEXT,
@@ -70,6 +71,10 @@ CREATE TABLE IF NOT EXISTS activities (
 -- למי שכבר יצר את הטבלאות: מוסיף מיקום למפה לפעילויות
 ALTER TABLE activities ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
 ALTER TABLE activities ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
+
+-- למי שכבר יצר את הטבלאות: פעילויות שייכות ליעד, והתאריך אופציונלי
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS stop_id TEXT;
+ALTER TABLE activities ALTER COLUMN activity_date DROP NOT NULL;
 
 -- 5. טבלת מעקב תקציב והוצאות
 CREATE TABLE IF NOT EXISTS budget_items (
@@ -109,8 +114,15 @@ CREATE TABLE IF NOT EXISTS tasks (
   depends_on JSONB DEFAULT '[]'::jsonb, -- מערך של מזהי משימות שחייבות להסתיים קודם
   phase TEXT DEFAULT 'before', -- before = לסגור לפני הטיול, during = לסגור במהלך הטיול
   urgent BOOLEAN DEFAULT false, -- לסגור בהקדם
+  person TEXT, -- האדם שהמשימה קשורה אליו
+  linked_date DATE, -- התאריך שהמשימה קשורה אליו
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- למי שכבר יצר את הטבלאות: קישור משימה לאדם ולתאריך, ויעדים שלא צריכים מלון
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS person TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS linked_date DATE;
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS no_hotel_stops JSONB DEFAULT '[]'::jsonb;
 
 -- 7. היסטוריית שיחות עם ה-AI
 CREATE TABLE IF NOT EXISTS chat_messages (

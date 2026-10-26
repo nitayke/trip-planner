@@ -4,14 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Activity, Lodging } from '../types/trip';
-import { routeStops, lodgingForStop, stopForDate, formatDM, countryStyle } from '../lib/route';
+import { routeStops, lodgingForStop, stopForDate, stopById, formatDM, countryStyle } from '../lib/route';
 import { lodgingCoords } from '../lib/tripLodgings';
 import { Map as MapIcon, Search, MapPinPlus, X, Loader2 } from 'lucide-react';
 
 interface MapTabProps {
   lodgings: Lodging[];
+  noHotelStops: string[];
   activities: Activity[];
-  defaultDate: string;
   onAddActivity: (activity: Omit<Activity, 'id' | 'tripId'>) => void;
 }
 
@@ -24,7 +24,7 @@ const LAYERS: { id: LayerKey; label: string }[] = [
   { id: 'attractions', label: 'אטרקציות' },
 ];
 
-const STATUS_COLOR = { booked: '#059669', partial: '#d97706', none: '#e11d48' } as const;
+const STATUS_COLOR = { booked: '#059669', partial: '#d97706', none: '#e11d48', notNeeded: '#a8a29e' } as const;
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -41,7 +41,7 @@ interface Pending {
   name: string;
 }
 
-export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: MapTabProps) {
+export function MapTab({ lodgings, noHotelStops, activities, onAddActivity }: MapTabProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const groupsRef = useRef<Record<LayerKey, L.LayerGroup> | null>(null);
@@ -61,14 +61,14 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
   const [searchError, setSearchError] = useState('');
   const [pending, setPending] = useState<Pending | null>(null);
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(defaultDate);
+  const [stopId, setStopId] = useState(routeStops[0].id);
   const [category, setCategory] = useState<Activity['category']>('attraction');
 
   const stopStatuses = useMemo(
-    () => routeStops.map((stop) => ({ stop, ...lodgingForStop(stop, lodgings) })),
-    [lodgings]
+    () => routeStops.map((stop) => ({ stop, ...lodgingForStop(stop, lodgings, noHotelStops) })),
+    [lodgings, noHotelStops]
   );
-  const missingCount = stopStatuses.filter((s) => s.status !== 'booked').length;
+  const missingCount = stopStatuses.filter((s) => s.status === 'none' || s.status === 'partial').length;
   const mappedActivities = activities.filter((a) => a.lat !== undefined && a.lng !== undefined);
   const unmappedCount = activities.length - mappedActivities.length;
 
@@ -133,7 +133,7 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
     // Destinations, colored by hotel status
     stopStatuses.forEach(({ stop, status, missingNights, lodgings: stopLodgings }, i) => {
       const color = STATUS_COLOR[status];
-      const badge = status === 'booked' ? '' : `<span class="trip-pin-badge" style="background:${color}">🛏️</span>`;
+      const badge = status === 'booked' || status === 'notNeeded' ? '' : `<span class="trip-pin-badge" style="background:${color}">🛏️</span>`;
       const icon = L.divIcon({
         className: 'trip-pin-wrap',
         html: `<div class="trip-pin ${status === 'none' ? 'trip-pin-pulse' : ''}" style="border-color:${color}">
@@ -147,7 +147,9 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
           ? `<div style="color:#e11d48;font-weight:700">🛏️ עדיין לא סגרתם מלון</div>`
           : status === 'partial'
             ? `<div style="color:#b45309;font-weight:700">🛏️ חסרים לילות: ${missingNights.map(formatDM).join(', ')}</div>`
-            : '';
+            : status === 'notNeeded'
+              ? `<div style="color:#78716c">🛏️ לא צריך מלון</div>`
+              : '';
       const hotels = stopLodgings.map((l) => `<div>🏨 ${esc(l.name)}</div>`).join('');
       L.marker([stop.lat, stop.lng], { icon, zIndexOffset: 500 })
         .bindPopup(
@@ -193,7 +195,10 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
       L.marker([a.lat!, a.lng!], { icon })
         .bindPopup(
           `<div dir="rtl" style="min-width:160px;line-height:1.5"><strong>${esc(a.title)}</strong>
-             <div>${formatDM(a.activityDate)}${a.location ? ` · ${esc(a.location)}` : ''}</div></div>`
+             <div>${[stopById(a.stopId)?.name, a.activityDate ? formatDM(a.activityDate) : '', a.location]
+               .filter(Boolean)
+               .map((x) => esc(x!))
+               .join(' · ')}</div></div>`
         )
         .addTo(groups.attractions);
     });
@@ -235,7 +240,7 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
     }).addTo(map);
   }, [pending]);
 
-  const nearestStopDate = (lat: number, lng: number) => {
+  const nearestStopId = (lat: number, lng: number) => {
     let best = routeStops[0];
     let bestDist = Infinity;
     for (const s of routeStops) {
@@ -245,19 +250,19 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
         bestDist = dist;
       }
     }
-    return best.start;
+    return best.id;
   };
 
   const startPending = (p: Pending) => {
     setPending(p);
     setTitle(p.name.split(',')[0] ?? '');
-    setDate(nearestStopDate(p.lat, p.lng));
+    setStopId(nearestStopId(p.lat, p.lng));
     mapRef.current?.setView([p.lat, p.lng], Math.max(mapRef.current.getZoom(), 12));
   };
 
   // Pending point set by a click on the map
   useEffect(() => {
-    if (pending && !title && !pending.name) setDate(nearestStopDate(pending.lat, pending.lng));
+    if (pending && !title && !pending.name) setStopId(nearestStopId(pending.lat, pending.lng));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending?.lat, pending?.lng]);
 
@@ -291,7 +296,7 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
     e.preventDefault();
     if (!pending || !title.trim()) return;
     onAddActivity({
-      activityDate: date,
+      stopId,
       title: title.trim(),
       location: pending.name || undefined,
       category,
@@ -428,14 +433,18 @@ export function MapTab({ lodgings, activities, defaultDate, onAddActivity }: Map
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-stone-600">תאריך</label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="mb-1 block text-xs font-medium text-stone-600">יעד</label>
+                <select
+                  value={stopId}
+                  onChange={(e) => setStopId(e.target.value)}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  {routeStops.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.emoji} {s.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-stone-600">סוג</label>

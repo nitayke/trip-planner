@@ -118,7 +118,7 @@ export function AiChatDrawer({
   const formatActionSummary = (name: string, args: any) => {
     switch (name) {
       case 'add_activity':
-        return `נוספה פעילות: ${args.title} (${args.activityDate || ''})`;
+        return `נוספה פעילות: ${args.title} (${args.activityDate || args.stopId || ''})`;
       case 'delete_activity':
         return `נמחקה פעילות: ${args.title}`;
       case 'add_flight':

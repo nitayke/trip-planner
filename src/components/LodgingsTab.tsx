@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import { Lodging } from '../types/trip';
-import { Hotel, Plus, Trash2, Pencil, MapPin, Calendar, Phone, ExternalLink, Hash, BedDouble } from 'lucide-react';
+import { Hotel, Plus, Trash2, Pencil, MapPin, Phone, ExternalLink, Hash, BedDouble, X, Undo2 } from 'lucide-react';
 import { routeStops, lodgingForStop, formatDM } from '../lib/route';
 
 interface LodgingsTabProps {
   lodgings: Lodging[];
+  noHotelStops: string[];
+  onToggleNoHotel: (stopId: string) => void;
   onAddLodging: (lodging: Omit<Lodging, 'id' | 'tripId'>) => void;
   onUpdateLodging: (id: string, lodging: Omit<Lodging, 'id' | 'tripId'>) => void;
   onDeleteLodging: (id: string) => void;
@@ -15,6 +17,8 @@ interface LodgingsTabProps {
 
 export function LodgingsTab({
   lodgings,
+  noHotelStops,
+  onToggleNoHotel,
   onAddLodging,
   onUpdateLodging,
   onDeleteLodging,
@@ -23,9 +27,9 @@ export function LodgingsTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const stopsWithoutHotel = routeStops
-    .map((stop) => ({ stop, ...lodgingForStop(stop, lodgings) }))
-    .filter((x) => x.status !== 'booked');
+  const stopStatuses = routeStops.map((stop) => ({ stop, ...lodgingForStop(stop, lodgings, noHotelStops) }));
+  const stopsWithoutHotel = stopStatuses.filter((x) => x.status === 'none' || x.status === 'partial');
+  const stopsNotNeeded = stopStatuses.filter((x) => x.status === 'notNeeded');
 
   // Form states
   const [name, setName] = useState('');
@@ -147,7 +151,7 @@ export function LodgingsTab({
             {stopsWithoutHotel.map(({ stop, status, missingNights }) => (
               <span
                 key={stop.id}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold ${
+                className={`flex items-center gap-1.5 rounded-xl py-1.5 pr-3 pl-1.5 text-xs font-semibold ${
                   status === 'none' ? 'bg-rose-600 text-white' : 'bg-amber-200 text-amber-950'
                 }`}
               >
@@ -158,9 +162,39 @@ export function LodgingsTab({
                     ? `${formatDM(stop.start)}–${formatDM(stop.lastNight ?? stop.end)}`
                     : `חסרים: ${missingNights.map(formatDM).join(', ')}`}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => onToggleNoHotel(stop.id)}
+                  title="לא צריך מלון ביעד הזה"
+                  className="flex items-center gap-1 rounded-lg bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-black/25"
+                >
+                  <X className="h-3 w-3" />
+                  <span>לא צריך</span>
+                </button>
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Destinations marked as not needing a hotel */}
+      {stopsNotNeeded.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-600">
+          <span className="font-semibold">יעדים בלי צורך במלון:</span>
+          {stopsNotNeeded.map(({ stop }) => (
+            <span key={stop.id} className="flex items-center gap-1.5 rounded-xl bg-white py-1 pr-2.5 pl-1.5 ring-1 ring-stone-200">
+              <span>{stop.emoji}</span>
+              <span>{stop.name}</span>
+              <button
+                type="button"
+                onClick={() => onToggleNoHotel(stop.id)}
+                title="להחזיר לרשימת היעדים שצריכים מלון"
+                className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-teal-700"
+              >
+                <Undo2 className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
         </div>
       )}
 

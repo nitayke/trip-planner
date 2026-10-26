@@ -5,6 +5,7 @@ export interface Trip {
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   notes?: string;
+  noHotelStops?: string[]; // ids of route stops marked as not needing a hotel
   shareCode?: string;
   createdAt?: string;
 }
@@ -42,7 +43,8 @@ export interface Lodging {
 export interface Activity {
   id: string;
   tripId: string;
-  activityDate: string; // YYYY-MM-DD
+  stopId?: string; // the place (route stop) the activity belongs to
+  activityDate?: string; // YYYY-MM-DD, only when the day was explicitly decided
   timeSlot?: string; // e.g. "10:00", "בוקר", "צהריים", "ערב"
   title: string;
   description?: string;
@@ -90,6 +92,8 @@ export interface TripTask {
   dependsOn: string[]; // ids of tasks that must be done first
   phase?: 'before' | 'during'; // before = close before the trip, during = close while travelling (default: before)
   urgent?: boolean; // close as soon as possible
+  person?: string; // the person the task is tied to, e.g. "אבא של נועה"
+  linkedDate?: string; // YYYY-MM-DD, the date the task is tied to (e.g. the day we meet that person)
 }
 
 export interface ChatMessage {

@@ -3,6 +3,7 @@ import { TripFullData, Trip, Flight, Lodging, Activity, BudgetItem, PackingItem,
 import { initialTripData } from './mockData';
 import { tripLodgings, placeholderLodgingIds } from './tripLodgings';
 import { tripBudget, placeholderBudgetIds } from './tripBudget';
+import { stopForDate } from './route';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -69,6 +70,19 @@ export function saveLocalTripData(data: TripFullData) {
   }
 }
 
+// Activities used to get an arbitrary day each. They now belong to a place (route stop): the place is
+// taken from the old date, and the date is dropped because it was never decided.
+function applyActivityPlaceMigration(data: TripFullData): TripFullData {
+  if (!data.activities.some((a) => !a.stopId && a.activityDate)) return data;
+  const activities = data.activities.map((a) => {
+    if (a.stopId || !a.activityDate) return a;
+    const migrated: Activity = { ...a, stopId: stopForDate(a.activityDate)?.id, activityDate: undefined };
+    syncTripItem('activity', 'update', migrated);
+    return migrated;
+  });
+  return { ...data, activities };
+}
+
 const SEED_MIGRATION_KEY = 'trip_seed_migration_v5';
 const BUDGET_MIGRATION_KEY = 'trip_seed_migration_v6';
 
@@ -76,7 +90,7 @@ const BUDGET_MIGRATION_KEY = 'trip_seed_migration_v6';
 // cancellation reminders existed: drops the old placeholder hotels, adds what is missing
 // (by id) and pushes it to Supabase.
 function applySeedMigration(data: TripFullData): TripFullData {
-  return applyBudgetMigration(applyLodgingMigration(data));
+  return applyActivityPlaceMigration(applyBudgetMigration(applyLodgingMigration(data)));
 }
 
 // Replaces the sample budget with the real flights and hotels (by id, so it never duplicates)
@@ -204,6 +218,7 @@ export async function loadTripData(): Promise<TripFullData> {
       startDate: currentTrip.start_date,
       endDate: currentTrip.end_date,
       notes: currentTrip.notes,
+      noHotelStops: Array.isArray(currentTrip.no_hotel_stops) ? currentTrip.no_hotel_stops : [],
       shareCode: currentTrip.share_code,
       createdAt: currentTrip.created_at,
     };
@@ -241,7 +256,8 @@ export async function loadTripData(): Promise<TripFullData> {
     const mappedActivities: Activity[] = (activitiesRes.data || []).map((a) => ({
       id: a.id,
       tripId: a.trip_id,
-      activityDate: a.activity_date,
+      stopId: a.stop_id ?? undefined,
+      activityDate: a.activity_date ?? undefined,
       timeSlot: a.time_slot,
       title: a.title,
       description: a.description,
@@ -287,6 +303,8 @@ export async function loadTripData(): Promise<TripFullData> {
       dependsOn: Array.isArray(t.depends_on) ? t.depends_on : [],
       phase: t.phase ?? 'before',
       urgent: Boolean(t.urgent),
+      person: t.person ?? undefined,
+      linkedDate: t.linked_date ?? undefined,
     }));
 
     const mappedChat: ChatMessage[] = (chatRes.data || []).map((c) => ({
@@ -345,6 +363,8 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
           start_date: item.startDate,
           end_date: item.endDate,
           notes: item.notes,
+          // העמודה קיימת רק אחרי שמריצים את ה-ALTER ב-schema.sql
+          ...(item.noHotelStops !== undefined ? { no_hotel_stops: item.noHotelStops } : {}),
         };
         reportSyncError(await supabase.from('trips').upsert({ id: item.id, ...payload }));
         break;
@@ -356,7 +376,8 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
           const payload = {
             id: item.id,
             trip_id: item.tripId,
-            activity_date: item.activityDate,
+            stop_id: item.stopId ?? null,
+            activity_date: item.activityDate ?? null,
             time_slot: item.timeSlot,
             title: item.title,
             description: item.description,
@@ -467,6 +488,8 @@ export async function syncTripItem(type: 'activity' | 'flight' | 'lodging' | 'bu
             depends_on: item.dependsOn,
             phase: item.phase ?? 'before',
             urgent: item.urgent ?? false,
+            person: item.person ?? null,
+            linked_date: item.linkedDate ?? null,
           };
           reportSyncError(await supabase.from('tasks').upsert(payload));
         }

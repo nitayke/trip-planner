@@ -14,6 +14,7 @@ import { BudgetTab } from '../components/BudgetTab';
 import { PackingTab } from '../components/PackingTab';
 import { TasksTab } from '../components/TasksTab';
 import { getBlockingTasks } from '../lib/tasks';
+import { routeStops, stopForDate } from '../lib/route';
 import { DueRemindersBanner } from '../components/DueRemindersBanner';
 import { AiChatDrawer } from '../components/AiChatDrawer';
 import { CloudSyncModal } from '../components/CloudSyncModal';
@@ -268,6 +269,25 @@ export default function HomePage() {
     syncTripItem('task', 'insert', newTask);
   };
 
+  const handleUpdateTask = (id: string, changes: Partial<Omit<TripTask, 'id' | 'tripId'>>) => {
+    updateData((prev) => {
+      const updated = prev.tasks.map((t) => (t.id === id ? { ...t, ...changes } : t));
+      syncTripItem('task', 'update', updated.find((t) => t.id === id));
+      return { ...prev, tasks: updated };
+    });
+  };
+
+  // Marks a destination as not needing a hotel (or brings it back)
+  const handleToggleNoHotel = (stopId: string) => {
+    updateData((prev) => {
+      const current = prev.trip.noHotelStops ?? [];
+      const noHotelStops = current.includes(stopId) ? current.filter((s) => s !== stopId) : [...current, stopId];
+      const trip = { ...prev.trip, noHotelStops };
+      syncTripItem('trip', 'update', trip);
+      return { ...prev, trip };
+    });
+  };
+
   const handleToggleTask = (id: string) => {
     updateData((prev) => {
       const target = prev.tasks.find((t) => t.id === id);
@@ -303,10 +323,16 @@ export default function HomePage() {
 
     switch (actionName) {
       case 'add_activity': {
+        // The place is what matters; a day is saved only when it was explicitly given
         const act: Omit<Activity, 'id' | 'tripId'> = {
-          activityDate: args.activityDate || tripData.trip.startDate,
+          stopId: routeStops.some((s) => s.id === args.stopId)
+            ? args.stopId
+            : args.activityDate
+              ? stopForDate(args.activityDate)?.id
+              : undefined,
+          activityDate: args.activityDate || undefined,
           title: args.title,
-          timeSlot: args.timeSlot || '12:00',
+          timeSlot: args.timeSlot || undefined,
           location: args.location,
           category: (args.category || 'sightseeing') as any,
           cost: Number(args.cost || 0),
@@ -318,18 +344,18 @@ export default function HomePage() {
       }
 
       case 'update_activity': {
-        const match = findItem(tripData.activities, args, (a) => a.title, (a) => a.activityDate, 'currentDate');
+        const match = findItem(tripData.activities, args, (a) => a.title, (a) => a.activityDate ?? '', 'currentDate');
         if (match) {
           handleUpdateActivity(
             match.id,
-            pick(args, ['activityDate', 'timeSlot', 'location', 'category', 'description', 'status'], args.newTitle, 'title', { cost: args.cost })
+            pick(args, ['stopId', 'activityDate', 'timeSlot', 'location', 'category', 'description', 'status'], args.newTitle, 'title', { cost: args.cost })
           );
         }
         break;
       }
 
       case 'delete_activity': {
-        const match = findItem(tripData.activities, args, (a) => a.title, (a) => a.activityDate, 'activityDate');
+        const match = findItem(tripData.activities, args, (a) => a.title, (a) => a.activityDate ?? '', 'activityDate');
         if (match) handleDeleteActivity(match.id);
         break;
       }
@@ -465,6 +491,15 @@ export default function HomePage() {
   const pendingPackingCount = tripData.packingItems.filter((i) => !i.isPacked).length;
   const pendingTasksCount = tripData.tasks.filter((t) => !t.isDone).length;
 
+  // Until the saved data is loaded, tripData is only the built-in plan: never show it
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-stone-500" role="status">
+        טוענים את הטיול…
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -496,8 +531,8 @@ export default function HomePage() {
 
         {activeTab === 'timeline' && (
           <TimelineTab
-            trip={tripData.trip}
             activities={tripData.activities}
+            flights={tripData.flights}
             onAddActivity={handleAddActivity}
             onUpdateActivity={handleUpdateActivity}
             onDeleteActivity={handleDeleteActivity}
@@ -520,6 +555,8 @@ export default function HomePage() {
         {activeTab === 'lodgings' && (
           <LodgingsTab
             lodgings={tripData.lodgings}
+            noHotelStops={tripData.trip.noHotelStops ?? []}
+            onToggleNoHotel={handleToggleNoHotel}
             onAddLodging={handleAddLodging}
             onUpdateLodging={handleUpdateLodging}
             onDeleteLodging={handleDeleteLodging}
@@ -530,8 +567,8 @@ export default function HomePage() {
         {activeTab === 'map' && (
           <MapTab
             lodgings={tripData.lodgings}
+            noHotelStops={tripData.trip.noHotelStops ?? []}
             activities={tripData.activities}
-            defaultDate={tripData.trip.startDate}
             onAddActivity={handleAddActivity}
           />
         )}
@@ -557,7 +594,9 @@ export default function HomePage() {
         {activeTab === 'tasks' && (
           <TasksTab
             tasks={tripData.tasks}
+            tripStart={tripData.trip.startDate}
             onAddTask={handleAddTask}
+            onUpdateTask={handleUpdateTask}
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}
           />

@@ -114,7 +114,7 @@ export function Header({ trip, lodgings, isCloudConnected, onOpenCloudModal, onO
             {routeStops.map((stop, i) => {
               const isCurrent = currentStop?.id === stop.id;
               const isPast = today ? stop.end < today : false;
-              const lodging = lodgingForStop(stop, lodgings);
+              const lodging = lodgingForStop(stop, lodgings, trip.noHotelStops);
               const noHotel = lodging.status === 'none';
               const partialHotel = lodging.status === 'partial';
               return (
