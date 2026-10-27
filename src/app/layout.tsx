@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Rubik, Secular_One } from "next/font/google";
 import "./globals.css";
+import { PasswordGate } from "../components/PasswordGate";
 
 const rubik = Rubik({
   subsets: ["hebrew", "latin"],
@@ -43,7 +44,7 @@ export default function RootLayout({
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>" />
       </head>
       <body className="min-h-full flex flex-col font-sans text-stone-900 selection:bg-teal-100 selection:text-teal-900">
-        {children}
+        <PasswordGate>{children}</PasswordGate>
       </body>
     </html>
   );
